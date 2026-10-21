@@ -39,10 +39,12 @@
 
 ## What This Does
 
-<!-- Your community, and what your classifier sorts posts into. Three or four
-     sentences. -->
-
-
+TakeMeter sorts comments from r/nba, Reddit's main NBA community, by what
+kind of take they are. Each comment gets one of three labels: `analysis`
+backs a claim with a checkable fact, `hot_take` makes a confident claim with
+nothing to check, and `reaction` responds to a game in progress or just
+finished. It's a fine-tuned DistilBERT model trained on 229 labelled
+comments from around opening night of the 2026-27 season.
 
 ---
 
@@ -139,11 +141,10 @@ jokes, off-topic tangents (soccer, tennis, lobster pasta), bare questions, and
 one-word replies that only make sense in their thread. Forcing them into one
 of three labels would have taught the model noise.
 
-**How I labelled them:** All 229 were pre-labelled by an AI tool using my
-definitions and decision rules, then read and corrected by me (marked
-`pre-labelled, checked`). None were labelled cold.
-<!-- TODO: only true once every row is reviewed. Add how many labels you
-     changed. -->
+**How I labelled them:** All 229 were pre-labelled by an AI tool (Claude
+Code) using the definitions and decision rules above. None were labelled
+cold. The rows are marked `pre-labelled, not yet checked` until I've read and
+corrected them. See the disclosure under How I Used AI.
 
 
 **Counts per label:**
@@ -230,19 +231,45 @@ at 10, so its F1 will move the most between seeds.
      workflow and disclosing it costs you nothing. Not disclosing it is the
      problem. -->
 
+I used Claude Code (Claude Opus 5.5) through most of this unit. It picked
+the community, drafted the labels, decision rules, and criteria, collected
+the comments, and pre-labelled them. Two moments where the output changed
+because of a check:
+
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* Pick a community, read posts from it, and write
+  candidate distinctions for Milestone 1.
+- *What came back:* r/nba, with four distinctions, each backed by two real
+  comments, plus a section of loose ends.
+- *What I changed:* The milestone only asks for three, so I had it cut to
+  three. It dropped "engages a specific counterpoint" because that showed up
+  least in the comments, and removed the loose-ends section. The three that
+  were left became my three labels.
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* Write eight posts that sit on the boundaries between my
+  labels, sort them under my first definitions, and tighten whatever fails.
+- *What came back:* Only 4 of 8 sorted cleanly. Posts quoting a stat from
+  the live game ("0-12 from three in the second half") could be `reaction` or
+  `analysis`, because my first `analysis` definition let in any checkable
+  number.
+- *What I changed:* The definitions were tightened. `analysis` now needs a
+  fact from outside the game, and `reaction` keeps a live stat. A second
+  decision rule was added for that boundary. Later, post-game threads showed
+  the same problem, so `reaction` was widened from "in progress" to "in
+  progress or just finished".
 
-**Pre-labelling disclosure:**
+**Pre-labelling disclosure:** Every one of the 229 rows in `labels.csv` was
+pre-labelled by Claude Code, using my definitions and decision rules. It also
+excluded 79 comments that fit none of the labels (jokes, off-topic, bare
+questions). The milestone asks for 20 posts labelled cold by me; there are
+none. The model in `results.json` was trained on these labels before I
+reviewed them.
+<!-- TODO: once you've reviewed the rows, add how many labels you changed and
+     re-run sections 2–5. If you label 20 cold, mark them `cold` and update
+     this paragraph. -->
 
 <!-- ═══════════════════════ UNIT 6 — THE TEST ═══════════════════════
 
