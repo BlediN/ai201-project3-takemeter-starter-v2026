@@ -7,4 +7,4 @@
 
 analysis: makes a claim and gives a specific, checkable fact from outside the game being played right now (a stat, a record, a ranking, a roster move) as the reason for it
 hot_take: a confident claim about a team, player, or the league with no checkable fact offered as the reason, including reactions to news like rankings or trades
-reaction: a response to the game being played right now (its plays, score, or atmosphere), even if it quotes a number from that game
+reaction: a response to a game that is in progress or just finished (its plays, score, or atmosphere), even if it quotes a number from that game

@@ -86,8 +86,8 @@ rankings or trades.
 
 ### `reaction`
 
-**Definition:** A response to the game being played right now (its plays,
-score, or atmosphere), even if it quotes a number from that game.
+**Definition:** A response to a game that is in progress or just finished
+(its plays, score, or atmosphere), even if it quotes a number from that game.
 
 **Example 1:**
 > Gotta love the Rihanna blasting, down by 6 with under a minute to go at home.
@@ -111,10 +111,10 @@ Reasoning, conditionals, and "if X then Y" don't count as support on their
 own. It's `analysis` only when a checkable fact (a number, a record, a named
 roster move) is given as the reason for the claim, even if the tone is heated.
 
-**Second rule (`reaction` vs `analysis`):** If the post is about the game
-being played right now, it's `reaction`, even if it cites a stat from that
-game ("0-12 from three in the second half"). Only facts from outside the
-current game can make a post `analysis`.
+**Second rule (`reaction` vs `analysis`):** If the post is about a game in
+progress or just finished, it's `reaction`, even if it cites a stat from that
+game ("0-12 from three in the second half"). Only facts from outside that
+game can make a post `analysis`.
 
 
 
@@ -125,45 +125,72 @@ current game can make a post `analysis`.
 <!-- Where you collected from, how you labelled, your counts, and three hard
      cases. -->
 
-**Where the posts came from:**
+**Where the posts came from:** Public r/nba comments from 15 threads around
+opening night (2026-10-20), pulled from Reddit's public RSS feeds: three live
+game threads, two post-game threads, the thread on The Athletic's power
+rankings, and threads about player stat lines, contract extensions, and the
+league's salary rules. I drew a sample of 308 comments, deliberately including
+comments with numbers from the discussion threads so `analysis` wouldn't be
+too thin. Bot comments, deleted comments, and anything under 40 characters
+were dropped before sampling.
 
-**How I labelled them:** <!-- Cold first? Pre-labelled with AI and corrected?
-Say so plainly — the disclosure is required, not penalised. -->
+**What I excluded:** 79 comments that make no claim and aren't about a game:
+jokes, off-topic tangents (soccer, tennis, lobster pasta), bare questions, and
+one-word replies that only make sense in their thread. Forcing them into one
+of three labels would have taught the model noise.
+
+**How I labelled them:** 20 posts cold first, by hand, with only my
+definitions (marked `cold`). The other 209 were pre-labelled by an AI tool
+using my definitions and decision rules, then read and corrected by me (marked
+`pre-labelled, checked`).
+<!-- TODO: only true once every row is reviewed. Add how many labels you
+     changed. -->
+
 
 **Counts per label:**
 
+<!-- Pre-labelled rows only; add the 20 cold rows once they're labelled. -->
+
 | Label | Count | Share |
 |---|---|---|
-|  |  |  |
-|  |  |  |
-|  |  |  |
-| **Total** |  | 100% |
+| `hot_take` | 83 |  |
+| `analysis` | 67 |  |
+| `reaction` | 59 |  |
+| cold, not yet labelled | 20 |  |
+| **Total** | 229 | 100% |
 
 **Three hard cases**
 
-<!-- Any post that made you pause: what it was, which two labels it could have
-     been, and what you chose. These are worth more than the easy 190. -->
-
 **1.**
-> *The post:*
+> *The post:* "Cade had a +/- of -1 this game and only shot 8-22. That was a
+> deep bench showout not Cade carrying"
 >
-> *Could have been:*
+> *Could have been:* `analysis` or `reaction`
 >
-> *I chose, because:*
+> *I chose, because:* `reaction`. The stats are real and they're doing the
+> arguing, but they're all from the game that just ended. My second rule
+> says only facts from outside that game make a post `analysis`.
 
 **2.**
-> *The post:*
+> *The post:* "27.8m a year pretty fucking solid deal for okc ngl"
 >
-> *Could have been:*
+> *Could have been:* `analysis` or `hot_take`
 >
-> *I chose, because:*
+> *I chose, because:* `hot_take`. There's a checkable number, but it's the
+> thing being judged, not a reason for the judgment. Nothing explains why
+> $27.8M is solid.
 
 **3.**
-> *The post:*
+> *The post:* "And shot 27.5% from 3 because it took them 3 quarters to start
+> hitting some 3s. Thats definitely going to go up and this team will look
+> unstoppable when it does."
 >
-> *Could have been:*
+> *Could have been:* `reaction` or `analysis`
 >
-> *I chose, because:*
+> *I chose, because:* `reaction`. It's from a post-game thread and the stat is
+> from that game, even though the claim is about the whole season. This case
+> is why I widened `reaction` from "in progress" to "in progress or just
+> finished".
 
 ---
 
