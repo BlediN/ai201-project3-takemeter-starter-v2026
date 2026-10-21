@@ -51,63 +51,70 @@ whether you hit them:
 
 ---
 
-## 1.
+## 1. Overall accuracy
 
-<!-- Your criterion. It must name a number. -->
+Overall accuracy is at least 0.65 on the held-out set, on every seed.
 
-
-
-**Why this target:**
-
-
-
----
-
-## 2.
-
-<!-- Your criterion. -->
-
-
-
-**Why this target:**
-
-
+**Why this target:** With three labels, guessing gets about 0.33. Guessing
+the biggest label every time gets about 0.40–0.45, because I expect `reaction`
+to be the largest share of r/nba comments. 0.65 is clearly above both. The
+test split is about 30 posts, so 0.65 means roughly 20 right. That's the
+point where I'd trust it to sort a comment section for me.
 
 ---
 
-## 3.
+## 2. Per-label performance
 
-<!-- Your criterion. -->
+`reaction` and `hot_take` each have an F1 of at least 0.60 on the held-out
+set, and `analysis` has at least 0.45, on every seed.
 
-
-
-**Why this target:**
-
-
-
----
-
-## 4.
-
-<!-- Your criterion. -->
-
-
-
-**Why this target:**
-
-
+**Why this target:** `analysis` gets the looser target for two reasons. It
+will be my smallest label (I expect about 40–50 examples, so 6–8 in the test
+split), and its F1 will jump between seeds. Also, my second decision rule says
+a live-game stat is still `reaction`, so the model can't just learn "has a
+number = `analysis`". I expect it to confuse those two. `reaction` and
+`hot_take` will each have more examples and clearer word cues ("this
+quarter", "INSANE"), so they get 0.60.
 
 ---
 
-## 5.
+## 3. Balance
 
-<!-- Your criterion. -->
+No label is more than 50% of `labels.csv`, and none is less than 20%.
 
+**Why this target:** The project's ceiling is 70%. That's too loose for
+r/nba, where a single game thread can hand me 100 `reaction` comments in
+minutes and drown out everything else. 20% of 200 is 40 posts, which puts
+about 6 in the test split. Below that, a label's F1 is decided by one or two
+posts and means nothing.
 
+---
 
-**Why this target:**
+## 4. Consistency
 
+My labels agree with the staff labels on at least 75% of the 30 staff posts,
+as measured by `agreement.py`.
 
+**Why this target:** 75% of 30 allows up to 7 disagreements. I'm not asking
+for 90%: the staff definitions use the same three label names but draw
+`reaction` differently (the writer's own experience, not live game action).
+Some disagreement will come from carrying my rules over to theirs, not from
+careless labeling.
+
+---
+
+## 5. Confidence
+
+Accuracy on the model's most confident third of test posts is at least 0.20
+higher than on its least confident third, on every seed.
+
+**Why this target:** If confidence doesn't separate right from wrong, I
+can't use it to flag posts for a human to check. Each third is only about 10
+posts, so accuracy moves in steps of 0.10. A 0.20 gap means two more correct
+posts in the confident third, which is the smallest gap I wouldn't write off
+as noise. I expect the least confident third to be mostly
+`analysis`/`hot_take` boundary posts, where the rule turns on whether a fact
+is checkable.
 
 ---
 
