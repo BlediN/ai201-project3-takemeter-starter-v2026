@@ -139,24 +139,20 @@ jokes, off-topic tangents (soccer, tennis, lobster pasta), bare questions, and
 one-word replies that only make sense in their thread. Forcing them into one
 of three labels would have taught the model noise.
 
-**How I labelled them:** 20 posts cold first, by hand, with only my
-definitions (marked `cold`). The other 209 were pre-labelled by an AI tool
-using my definitions and decision rules, then read and corrected by me (marked
-`pre-labelled, checked`).
+**How I labelled them:** All 229 were pre-labelled by an AI tool using my
+definitions and decision rules, then read and corrected by me (marked
+`pre-labelled, checked`). None were labelled cold.
 <!-- TODO: only true once every row is reviewed. Add how many labels you
      changed. -->
 
 
 **Counts per label:**
 
-<!-- Pre-labelled rows only; add the 20 cold rows once they're labelled. -->
-
 | Label | Count | Share |
 |---|---|---|
-| `hot_take` | 83 |  |
-| `analysis` | 67 |  |
-| `reaction` | 59 |  |
-| cold, not yet labelled | 20 |  |
+| `hot_take` | 90 | 39% |
+| `analysis` | 73 | 32% |
+| `reaction` | 66 | 29% |
 | **Total** | 229 | 100% |
 
 **Three hard cases**
@@ -198,15 +194,28 @@ using my definitions and decision rules, then read and corrected by me (marked
 
 <!-- Your starting model, your settings, and anything you changed and why. -->
 
-**Base model:**
+**Base model:** `distilbert-base-uncased`
 
-**Settings:** <!-- epochs, learning rate, batch size, seed -->
+**Settings:** 3 epochs, learning rate 2e-5, batch size 16, 128 tokens per
+post, seed 42.
 
-**Anything I changed from the defaults, and why:**
+**Device:** `cpu` (torch 2.14.1+cpu), as recorded in `results.json`.
 
-**Split sizes:** <!-- train / val / test, and per-label counts in the test
-split. If a label had fewer than about 8 in test, say so — it explains a lot
-of next unit's variance. -->
+**Anything I changed from the defaults, and why:** Nothing. One thing to
+watch: 8 posts are over 100 words and probably get cut off at 128 tokens, and
+7 of them are `analysis`. Those are the posts where the supporting facts tend
+to come late.
+
+**Split sizes:** train 159 · val 35 · test 35
+
+| Label | Train | Val | Test |
+|---|---|---|---|
+| `analysis` | 51 | 11 | 11 |
+| `hot_take` | 62 | 14 | 14 |
+| `reaction` | 46 | 10 | 10 |
+
+Every label has at least 10 in the test split. `reaction` is the thinnest
+at 10, so its F1 will move the most between seeds.
 
 
 
