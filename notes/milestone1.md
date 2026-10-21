@@ -6,22 +6,16 @@
 
 - Public, no invite or login needed to read.
 - Not built around one show or release; it covers the whole league.
-- Enormous volume. A single live game thread produces hundreds of comments, so
-  200 posts is easy.
-- The unit I'll classify is a **comment**, not a submission. Most r/nba
-  submissions are a headline plus a link; the takes live in the comments.
+- High volume, with real variation in quality, from one-line reactions to
+  paragraph-long arguments.
+- I'm reading **comments**, not submissions. Most r/nba submissions are a
+  headline plus a link; the takes live in the comments.
 
 ## What I read
 
-About 100 comments on 2026-10-20, opening night of the season:
-
-- the live comment stream (mostly the 76ers–Knicks and Thunder–Spurs game
-  threads)
-- the full thread on The Athletic's preseason power rankings
-
-Quality varies a lot. The game threads are mostly one-line reactions. The
-rankings thread runs from "HUH???" to a paragraph defending the Pistons with
-league ranks and shooting percentages.
+Comments from 2026-10-20, opening night of the season: the live 76ers–Knicks
+and Thunder–Spurs game threads, and the thread on The Athletic's preseason
+power rankings.
 
 ## Candidate distinctions
 
@@ -59,22 +53,3 @@ explains *why*.
 
 The game-thread comments only make sense if you're watching. The rankings
 comments stand on their own.
-
-### 4. Some engage a specific counterpoint. Most are one-sided.
-
-> "I generally agree with your premise, but Kawhi did essentially play a full
-> season last year. If you qualify for end of season awards and play in the
-> playoffs, that should be considered a full season."
-
-> "lol such a horrible list. Heat, Nuggets, and TWolves should be tier two at
-> least."
-
-## Things I noticed that don't fit yet
-
-- **Jokes with no claim in them** are common ("give brunson a green lantern
-  ring", "I assume this ranking was made after they figured out how to use the
-  door handles"). They aren't analysis, hot takes, or reactions. I need to
-  decide whether they get a label or get filtered out.
-- **AutoModerator** comments need to be filtered out before labeling.
-- **Distinctions 1 and 2 overlap.** A stat is usually a reason. The hard
-  boundary will probably be "gives a reason but no checkable fact."
