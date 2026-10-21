@@ -54,33 +54,67 @@
      The decision rule is worth a point on its own and it's the thing most
      people leave out. Every taxonomy has a hardest boundary. Name yours. -->
 
-### `label_one`
+### `analysis`
 
-**Definition:**
-
-**Example 1:**
->
-
-**Example 2:**
->
-
-### `label_two`
-
-**Definition:**
+**Definition:** Makes a claim and gives a specific, checkable fact from
+outside the game being played right now (a stat, a record, a ranking, a roster
+move) as the reason for it.
 
 **Example 1:**
->
+> We had the #3 defense last year and the #8 offense along with a top-5 MVP
+> Candidate, an All-NBA 22yo, and a top 3 DPOY candidate; all of whom are now
+> locked up long term. Our biggest flaw was our lack of shooting which we
+> addressed this summer by bringing in 3 40%+ shooters.
 
 **Example 2:**
->
+> Almost the entire Pacers team is back. The starting lineup is the same except
+> they swapped Turner for Zubac. The bench is much the same. They swapped
+> Mathurin for Oubre, who is a better player.
+
+### `hot_take`
+
+**Definition:** A confident claim about a team, player, or the league with no
+checkable fact offered as the reason, including reactions to news like
+rankings or trades.
+
+**Example 1:**
+> There are only two spots the Spurs should be in on this list, either 1 or 2.
+
+**Example 2:**
+> I cannot take seriously any ranking that puts the Spurs behind the Pistons
+> (and the Raptors)
+
+### `reaction`
+
+**Definition:** A response to the game being played right now (its plays,
+score, or atmosphere), even if it quotes a number from that game.
+
+**Example 1:**
+> Gotta love the Rihanna blasting, down by 6 with under a minute to go at home.
+
+**Example 2:**
+> give brunson a green lantern ring, that mf is all willpower to get those
+> buckets
 
 ### The hardest boundary
 
-**Which two labels:**
+**Which two labels:** `analysis` and `hot_take`
+
+**The post that sits between them:**
+> We're basically 100% dependent on health. If AG and Braun stay healthy then
+> our defense doesn't suffer and we're a top team. If not then we're probably
+> in the 5-7 range in the West
 
 **The decision rule I used every time:**
-<!-- e.g. "If the post names a specific checkable fact, it's `analysis`, even
-     if the tone is heated." -->
+If the post gives a reason but no fact you could look up, it's `hot_take`.
+Reasoning, conditionals, and "if X then Y" don't count as support on their
+own. It's `analysis` only when a checkable fact (a number, a record, a named
+roster move) is given as the reason for the claim, even if the tone is heated.
+
+**Second rule (`reaction` vs `analysis`):** If the post is about the game
+being played right now, it's `reaction`, even if it cites a stat from that
+game ("0-12 from three in the second half"). Only facts from outside the
+current game can make a post `analysis`.
 
 
 
