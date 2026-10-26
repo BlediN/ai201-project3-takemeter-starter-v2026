@@ -335,7 +335,7 @@ least: it stayed at 0.000 for both models.
 | 1. Overall accuracy | ≥ 0.65 on every seed | 0.457 | 0.429 | 0.400 | MISSED |
 | 2. Per-label F1 | `reaction` ≥ 0.60, `hot_take` ≥ 0.60, `analysis` ≥ 0.45, every seed | r 0.000 · h 0.578 · a 0.400 | r 0.000 · h 0.583 · a 0.167 | r 0.000 · h 0.571 · a 0.000 | MISSED |
 | 3. Balance | No label > 50% or < 20% of `labels.csv` | hot_take 39.3% · analysis 31.9% · reaction 28.8% (dataset-wide, same for every seed) | — | — | MET |
-| 4. Consistency | ≥ 75% agreement with the staff labels (`agreement.py`) | not run yet | — | — | PENDING |
+| 4. Consistency | ≥ 75% agreement with the staff labels (`agreement.py`) | 30/30 = 100% (dataset-level, same for every seed; AI-assisted labels, see Agreement Report) | — | — | MET |
 | 5. Confidence | Most-confident third ≥ 0.20 more accurate than least-confident third, every seed | 0.545 vs 0.273 (+0.273) | 0.545 vs 0.273 (+0.273) | 0.545 vs 0.364 (+0.182) | MISSED |
 
 Spread across seeds (notebook section 6, run on CPU, torch 2.14.1+cpu):
@@ -416,7 +416,12 @@ clearly `analysis` as `hot_take`.
      data/staff_taxonomy.md, not your own — so every argument below is made
      from those definitions and those decision rules. -->
 
-**Agreement rate:** ___ / 30 = ___%
+**Agreement rate:** 30 / 30 = 100%
+
+The labels in `my_staff_labels.csv` were produced with AI assistance (Claude),
+under the staff taxonomy, without looking at `data/staff_labels.csv`. So this
+rate measures how well those definitions can be applied as written. It doesn't
+measure my own consistency.
 
 <!-- Nobody grades this number. A 60% who argues every disagreement from the
      stated rules beats a 95% who wrote "staff was right" nine times. Several
@@ -438,25 +443,40 @@ clearly `analysis` as `hot_take`.
      written rule two different ways on 30 posts, that is direct evidence about
      what you did across your own 200. -->
 
-**1.**
-> *The post:*
->
-> *Staff said / I said:*
->
-> *My call, and why:*
->
-> *Which pile:*
+None. Every one of the 30 matched, so there is nothing for piles (a), (b) or
+(c). Staff marked seven posts as HARD (`borderline = yes`), and all seven
+landed on the same side for the same reason. Here is which rule settled each:
 
-**2.**
-> *The post:*
->
-> *Staff said / I said:*
->
-> *My call, and why:*
->
-> *Which pile:*
+| Post | Label | Rule that decided it |
+|---|---|---|
+| sp_005 "Carbon plates aren't the whole story. My times dropped 2%…" | `analysis` | Rule 1: the two 2% drops are the argument, not decoration |
+| sp_010 "Three of us ran the same session… within 10 seconds" | `analysis` | Rule 1: hedged and a tiny sample, but the observation is what the claim rests on |
+| sp_014 "Times are down about 3%… so obviously the shoes are the whole story" | `hot_take` | Rule 1: "so obviously" carries it; the 3% is decoration |
+| sp_019 "Nobody actually enjoys the long run…" | `hot_take` | Rule 2: a claim about everyone, not a report of the writer's morning |
+| sp_020 "Every injury thread on this forum is the same injury…" | `hot_take` | Rule 1: checkable in principle, but no count is given |
+| sp_028 "Third DNF this year…" | `reaction` | Rule 3: "third" is countable, but nothing is argued from it |
+| sp_029 "Just realised the shoes I set every PB in… wrong size" | `reaction` | Rule 2: the writer's own realisation, not a claim about shoes |
+
+The closest I came to a pile (b) was sp_005, sp_007 and sp_010. Their evidence
+is the writer's own times and runs, which nobody else can check. The
+definition lists "a time" as a checkable fact but never says whether
+self-reported data counts. Staff counted it, and so did I, but the rule
+doesn't actually settle it.
 
 **What the pattern in my disagreements tells me:**
+With no disagreements there's no pattern of inconsistency to report, and I
+don't think 100% means much on its own. The set looks easy to get right
+without fully applying the rules. The posts arrive in three blocks of ten
+(`analysis`, then `hot_take`, then `reaction`), and most posts in each block
+are clear-cut. The hard cases are the seven above. Even taken together, those
+would only have brought the rate down to 77%.
+
+The more useful finding is about my own taxonomy. Staff's `reaction` is about
+the writer's own experience, while mine is about a game in progress. Staff's
+rule 1 also asks whether a fact is load-bearing, which is stricter than my
+"is there a checkable fact". Under my rule, sp_014 (a post with a 3% stat in
+it) could plausibly have been `analysis`. That is the same
+`analysis`/`hot_take` line my model blurs.
 
 
 
