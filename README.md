@@ -285,11 +285,11 @@ reviewed them.
 
 | Measure | Baseline | Trained | Difference |
 |---|---|---|---|
-| Overall accuracy | 0.314 |  |  |
-| Macro F1 | 0.159 |  |  |
-| F1 — `analysis` | 0.478 |  |  |
-| F1 — `hot_take` | 0.000 |  |  |
-| F1 — `reaction` | 0.000 |  |  |
+| Overall accuracy | 0.314 | 0.457 | +0.143 |
+| Macro F1 | 0.159 | 0.326 | +0.167 |
+| F1 — `analysis` | 0.478 | 0.400 | -0.078 |
+| F1 — `hot_take` | 0.000 | 0.578 | +0.578 |
+| F1 — `reaction` | 0.000 | 0.000 | +0.000 |
 
 The baseline is `facebook/bart-large-mnli` doing zero-shot classification on
 the 35 held-out posts in `test_split.csv`, given only my definitions from
@@ -304,8 +304,22 @@ comment seems to fit it.
 <!-- Milestone 1 asks you to write this BEFORE seeing the trained numbers. A
      prediction made afterwards isn't one. -->
 I expect the trained model to beat the baseline most on **analysis**, because analytical text typically features distinct structural markers, longer length, and specialized vocabulary that make it easier for a classifier to separate, and least on **reaction**, because short reactions are often highly ambiguous and overlap heavily in tone and phrasing with hot takes, making them much harder to isolate accurately.
+
+**What the gap actually means:**
 <!-- If the baseline matched your trained model, your fine-tuning added
      nothing — and that is a real finding, not a failure. Say it plainly. -->
+The gap is smaller than the +0.143 accuracy makes it look. Neither model
+learned to separate all three labels. The baseline labelled every post
+`analysis`, and the trained model labelled most posts `hot_take`. 31 of its
+35 guesses were `hot_take`, and it never guessed `reaction`. Each model's
+accuracy is close to the share of its favourite label in the test split (11
+of 35 `analysis` vs. 14 of 35 `hot_take`). So most of the +0.143 comes from
+the trained model falling back on a larger class, not from better judgement.
+Fine-tuning did add one real thing: it learned to pick out some `analysis`
+posts (4 guesses, 3 of them right) while keeping `hot_take` as its default.
+My prediction was partly wrong. I expected the biggest gain on `analysis`,
+but `analysis` went down by 0.078. I was right that `reaction` would gain
+least: it stayed at 0.000 for both models.
 
 
 
@@ -318,27 +332,49 @@ I expect the trained model to beat the baseline most on **analysis**, because an
 
 | Criterion | Target | Seed 42 | Seed 7 | Seed 2024 | Verdict |
 |---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |
+| 1. Overall accuracy | ≥ 0.65 on every seed | 0.457 | 0.429 | 0.400 | MISSED |
+| 2. Per-label F1 | `reaction` ≥ 0.60, `hot_take` ≥ 0.60, `analysis` ≥ 0.45, every seed | r 0.000 · h 0.578 · a 0.400 | r 0.000 · h 0.583 · a 0.167 | r 0.000 · h 0.571 · a 0.000 | MISSED |
+| 3. Balance | No label > 50% or < 20% of `labels.csv` | hot_take 39.3% · analysis 31.9% · reaction 28.8% (dataset-wide, same for every seed) | — | — | MET |
+| 4. Consistency | ≥ 75% agreement with the staff labels (`agreement.py`) | not run yet | — | — | PENDING |
+| 5. Confidence | Most-confident third ≥ 0.20 more accurate than least-confident third, every seed | 0.545 vs 0.273 (+0.273) | 0.545 vs 0.273 (+0.273) | 0.545 vs 0.364 (+0.182) | MISSED |
+
+Spread across seeds (notebook section 6, run on CPU, torch 2.14.1+cpu):
+
+| Measure | Seed 42 | Seed 7 | Seed 2024 | Spread |
+|---|---|---|---|---|
+| Overall accuracy | 0.457 | 0.429 | 0.400 | 0.057 |
+| Macro F1 | 0.326 | 0.250 | 0.190 | 0.135 |
+| F1 — `analysis` | 0.400 | 0.167 | 0.000 | 0.400 |
+| F1 — `hot_take` | 0.578 | 0.583 | 0.571 | 0.012 |
+| F1 — `reaction` | 0.000 | 0.000 | 0.000 | 0.000 |
+
+Accuracy moved 0.057 across seeds, which is under the 10-point line but wide
+enough that a criterion landing inside that band can't be called either way.
+The steadiness is misleading, though. The model mostly predicts `hot_take`,
+and accuracy stays close to `hot_take`'s 40% share of the test split. Seed 42
+reproduces the previous unit's `results.json` exactly.
 
 ### Confusion matrix
 
 <!-- ⚠️ TYPED AS A MARKDOWN TABLE. The notebook prints one ready to paste.
      An image of a matrix earns nothing. -->
 
-| true \ predicted |  |  |  |
+Seed 42:
+
+| true \ predicted | analysis | hot_take | reaction |
 |---|---|---|---|
-| **** |  |  |  |
-| **** |  |  |  |
-| **** |  |  |  |
+| **analysis** | 3 | 8 | 0 |
+| **hot_take** | 1 | 13 | 0 |
+| **reaction** | 0 | 10 | 0 |
 
 **My biggest off-diagonal number, and what it means:**
 <!-- Not "the model made mistakes" — WHICH boundary it didn't learn, and which
      direction. "7 real analysis posts were called hot_take and only 3 went the
      other way" is a direction, not just an error rate. -->
+All 10 real `reaction` posts were called `hot_take`, and no `hot_take` post
+went the other way. The model never predicts `reaction` at all, so it hasn't
+learned the `reaction`/`hot_take` boundary. It treats every post that isn't
+clearly `analysis` as `hot_take`.
 
 
 
