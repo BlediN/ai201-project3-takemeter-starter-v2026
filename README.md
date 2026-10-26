@@ -271,6 +271,39 @@ reviewed them.
      re-run sections 2–5. If you label 20 cold, mark them `cold` and update
      this paragraph. -->
 
+**Unit 6.** I used Claude Code for most of this unit too. It ran the
+three-seed training, read the results, labelled the staff set, and drafted
+most of the write-up below. Two moments where it helped me spot patterns in
+my errors:
+
+**Moment 3: the baseline's 0.314**
+
+- *What I asked for:* Help reading the baseline's output.
+- *What came back:* It counted the predictions in `baseline_results.json` and
+  found the baseline had labelled all 35 posts `analysis`. The 0.314 accuracy
+  was just `analysis`'s share of the test split, not a third of the posts
+  sorted correctly.
+- *What I changed:* I report the baseline as "never separated the labels"
+  instead of quoting 0.314 as if it meant something. The same check later
+  showed my trained model doing the same thing with `hot_take`.
+
+**Moment 4: the diagnosis**
+
+- *What I asked for:* A diagnosis for each missed criterion.
+- *What came back:* It pointed to the training loss in the log (1.09 → 1.02,
+  against 1.099 for an even guess) and to seed 2024 labelling every post
+  `hot_take`. Its conclusion was that the model had barely trained, which is
+  a different problem from mislabelled data.
+- *What I changed:* I picked "more epochs" as my one improvement, instead of
+  relabelling a boundary. The after-run backed it up: `reaction` went from
+  0.000 to 0.50–0.67.
+
+**Staff set disclosure:** Claude labelled the 30 posts in
+`my_staff_labels.csv` under the staff taxonomy, before anyone opened
+`data/staff_labels.csv`. The 30/30 agreement therefore measures how well
+those rules can be applied, not my own consistency. The Agreement Report
+says so too.
+
 <!-- ═══════════════════════ UNIT 6 — THE TEST ═══════════════════════
 
      Don't fill these in during unit 5.
@@ -543,24 +576,94 @@ it) could plausibly have been `analysis`. That is the same
 
 ## The Improvement
 
-**What I changed:**
+**What I changed:** One training setting: `EPOCHS` from 3 to 10 in section 2
+of the notebook. Learning rate (2e-5), batch size (16), max length (128), the
+data and the three seeds (42, 7, 2024) are all unchanged. That raises
+training from about 30 update steps per seed to about 100. Section 6 was
+re-run with `RUN_LABEL = "after"`, so the before-numbers in
+`results_three_seeds_before.json` were kept.
 
-**Which diagnosis pointed at it:**
+**Which diagnosis pointed at it:** Every miss came back to the model barely
+training. Training loss went from about 1.09 to 1.02, against 1.099 for an
+even guess between three labels. Validation accuracy was flat at 0.400 on
+seed 7, and the predictions collapsed onto `hot_take`. The agreement check
+and the confusion matrix didn't point at a boundary I'd labelled two ways,
+so relabelling wasn't the fix the evidence called for. And `reaction` (66
+posts) isn't much thinner than `analysis` (73), so adding examples wasn't
+either. If more training steps lift `reaction` off 0.000, that confirms the
+labels weren't the main problem.
 
 ### Run Log — After
 
 | Criterion | Target | Seed 42 | Seed 7 | Seed 2024 | Verdict |
 |---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |
+| 1. Overall accuracy | ≥ 0.65 on every seed | 0.600 | 0.600 | 0.657 | MISSED |
+| 2. Per-label F1 | `reaction` ≥ 0.60, `hot_take` ≥ 0.60, `analysis` ≥ 0.45, every seed | r 0.500 · h 0.615 · a 0.667 | r 0.667 · h 0.538 · a 0.609 | r 0.667 · h 0.615 · a 0.692 | MISSED |
+| 3. Balance | No label > 50% or < 20% of `labels.csv` | unchanged: 39.3% / 31.9% / 28.8% | — | — | MET |
+| 4. Consistency | ≥ 75% agreement with staff | unchanged: 30/30 | — | — | MET |
+| 5. Confidence | Most-confident third ≥ 0.20 more accurate than least-confident, every seed | 0.727 vs 0.273 (+0.455) | 0.818 vs 0.273 (+0.545) | 0.636 vs 0.636 (+0.000) | MISSED |
+
+Spread across seeds (10 epochs, everything else unchanged):
+
+| Measure | Seed 42 | Seed 7 | Seed 2024 | Spread |
+|---|---|---|---|---|
+| Overall accuracy | 0.600 | 0.600 | 0.657 | 0.057 |
+| Macro F1 | 0.594 | 0.605 | 0.658 | 0.064 |
+| F1 — `analysis` | 0.667 | 0.609 | 0.692 | 0.084 |
+| F1 — `hot_take` | 0.615 | 0.538 | 0.615 | 0.077 |
+| F1 — `reaction` | 0.500 | 0.667 | 0.667 | 0.167 |
+
+Before and after, side by side:
+
+| Measure | Before (3 epochs) 42 / 7 / 2024 | After (10 epochs) 42 / 7 / 2024 |
+|---|---|---|
+| Overall accuracy | 0.457 / 0.429 / 0.400 | 0.600 / 0.600 / 0.657 |
+| Macro F1 | 0.326 / 0.250 / 0.190 | 0.594 / 0.605 / 0.658 |
+| F1 — `analysis` | 0.400 / 0.167 / 0.000 | 0.667 / 0.609 / 0.692 |
+| F1 — `hot_take` | 0.578 / 0.583 / 0.571 | 0.615 / 0.538 / 0.615 |
+| F1 — `reaction` | 0.000 / 0.000 / 0.000 | 0.500 / 0.667 / 0.667 |
+| Final training loss | ~1.02 on every seed | 0.386 / 0.402 / 0.391 |
+
+Confusion matrix after, seed 42:
+
+| true \ predicted | analysis | hot_take | reaction |
+|---|---|---|---|
+| **analysis** | 8 | 2 | 1 |
+| **hot_take** | 2 | 8 | 4 |
+| **reaction** | 3 | 2 | 5 |
 
 **Did it help, and how do I know:**
 
 <!-- If it didn't, say so. Relabelling that didn't help is a genuinely
      interesting result and earns full credit. -->
+Yes, a lot, though it still didn't turn any missed criterion into a pass.
+Macro F1 roughly doubled or better on every seed (0.19–0.33 → 0.59–0.66), and
+`reaction` went from never being predicted to an F1 of 0.50–0.67. The
+training loss shows why: it now falls steadily to about 0.39 instead of
+stalling at 1.02, so the model actually learned instead of sitting at its
+starting point. The confusion matrix no longer has one column swallowing
+everything. Errors are spread across all six off-diagonal cells, and the
+biggest is 4 real `hot_take` posts called `reaction`, against 2 the other
+way. That confirms the diagnosis: the labels weren't the main problem;
+under-training was. With only 30 update steps, `reaction` scored 0.000; with
+100, it reached 0.67 on two seeds.
+
+Each criterion still misses on at least one seed:
+- **Accuracy:** passes on seed 2024 (0.657) but not on 42 or 7 (0.600 each).
+- **Per-label F1:**
+  - `analysis` now clears 0.45 on every seed.
+  - `reaction` misses on seed 42 (0.500).
+  - `hot_take` misses on seed 7 (0.538).
+- **Confidence:** passed easily on two seeds (+0.455, +0.545), then showed no
+  gap at all on seed 2024. Its most- and least-confident thirds both scored
+  0.636.
+
+Accuracy still moves 0.057 between seeds. Most misses on criteria 1 and 2 are
+within about 0.06 of the target; the exception is `reaction` on seed 42,
+which is 0.10 short. With 35 test posts, each post is worth
+about 0.03 of accuracy. So the honest reading is that the model is now near
+my targets, but this test set is too small to say whether it's above or
+below them.
 
 
 
@@ -570,11 +673,55 @@ it) could plausibly have been `analysis`. That is the same
 
 <!-- For each criterion still missed: what you'd do, and why you stopped. -->
 
+After the 10-epoch run, three criteria are still missed. Each one misses on
+at least one seed.
 
+**1. Overall accuracy (0.600 / 0.600 / 0.657, target ≥ 0.65).**
+- *What I'd do:* Label more posts so the test split isn't 35 posts. At that
+  size, one post is worth about 0.03 of accuracy, so the two missing seeds
+  are less than two posts short of the target. Before that, I'd review the
+  AI pre-labels in `labels.csv`, which I still haven't checked row by row.
+  Errors in the training labels put a ceiling on accuracy that more epochs
+  can't lift.
+- *Why I stopped:* The milestone allows one change, and I spent it on
+  training length because that's where the diagnosis pointed. More data and a
+  label review are each a separate change that would need its own
+  three-seed run, and each three-seed run at 10 epochs took close to an hour
+  on my CPU.
+
+**2. Per-label F1 (`reaction` 0.500 on seed 42, `hot_take` 0.538 on seed 7).**
+- *What I'd do:* Review the `hot_take`/`reaction` boundary in `labels.csv`.
+  It's now the biggest confusion: 4 real `hot_take` posts were called
+  `reaction`, and 2 went the other way. The staff agreement check can't speak
+  to it, because the staff `reaction` (the writer's own experience) isn't my
+  `reaction` (a live or just-finished game). The only way to find out
+  whether I drew that line consistently is to go back through my own rows.
+  I'd also try keeping the epoch with the best validation score instead of
+  always taking the 10th.
+- *Why I stopped:* Same reason. It's a second change, and the milestone asks
+  for one, measured properly.
+
+**5. Confidence (+0.455 / +0.545 / +0.000, target ≥ +0.20 on every seed).**
+- *What I'd do:* Mostly the same fix as criterion 1, a bigger test set. Each
+  third is 11 posts, and seed 2024's zero gap is 7 right out of 11 in both
+  thirds. Two strong seeds and one flat one look more like a small sample
+  than a broken signal. With about 30 posts per third, I'd trust the
+  verdict either way.
+- *Why I stopped:* I can't fix it without new labelled data, which is outside
+  this unit's one change.
 
 **The gap between what I meant my labels to capture and what the model
 learned:**
 <!-- Two sentences. Your confusion matrix is the evidence. -->
+I meant `reaction` to depend on *what the post is about* (a live or
+just-finished game) and `analysis` on *where the fact comes from* (outside
+that game). But the seed-42 matrix shows 3 real `reaction` posts called
+`analysis`, and `hot_take` leaking into both other labels (2 to `analysis`, 4
+to `reaction`). Those errors fit a model leaning on surface cues: a number
+pulls a post toward `analysis`, and excited game talk pulls it toward
+`reaction`. It doesn't seem to have learned my rule that a stat from the
+game is still `reaction`. I haven't checked those specific posts, so this is
+my reading of the matrix, not a confirmed cause.
 
 
 
