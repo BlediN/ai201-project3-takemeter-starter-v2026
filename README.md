@@ -387,13 +387,72 @@ clearly `analysis` as `hot_take`.
 
 | # | Criterion | Target | Verdict | How I decided |
 |---|---|---|---|---|
-| 1 |  |  |  |  |
-| 2 |  |  |  |  |
-| 3 |  |  |  |  |
-| 4 |  |  |  |  |
-| 5 |  |  |  |  |
+| 1 | Overall accuracy | ≥ 0.65 on every seed | MISSED | 0.457 / 0.429 / 0.400. No seed comes within 0.19 of the target. |
+| 2 | Per-label F1 | `reaction` ≥ 0.60, `hot_take` ≥ 0.60, `analysis` ≥ 0.45, every seed | MISSED | `reaction` 0.000 on every seed. `hot_take` 0.571–0.583, just short. `analysis` 0.400 / 0.167 / 0.000. No part holds on any seed. |
+| 3 | Balance | No label > 50% or < 20% of `labels.csv` | MET | Counted `labels.csv`: hot_take 90 (39.3%), analysis 73 (31.9%), reaction 66 (28.8%). |
+| 4 | Consistency | ≥ 75% agreement with staff | MET | `agreement.py`: 30/30 = 100%. The labels were AI-assisted, so this tests the staff rules more than my own labelling (see Agreement Report). |
+| 5 | Confidence | Most-confident third ≥ 0.20 more accurate than least-confident, every seed | MISSED | Gaps +0.273 / +0.273 / +0.182. Seed 2024 falls short, and the target has to hold on all three. |
 
 **Diagnoses**
+
+All three misses have one cause: **the model barely trained, and it fell back
+on predicting my biggest label.** In the terms of the four common causes, this
+is "a task the model can't reach from this much data". More exactly, it's the
+default training setup not getting far with 159 training posts.
+
+How I know:
+
+- **The loss barely moved off chance.** For three labels, a model that guesses
+  evenly has a loss of ln 3 ≈ 1.099. Training loss went from about 1.09 to
+  1.02 on every seed. With 159 training posts and a batch size of 16, three
+  epochs is only about 30 update steps, and the learning rate decays to almost
+  zero by the end. Validation accuracy was flat at 0.400 on seed 7 for all
+  three epochs.
+- **The predictions collapse onto `hot_take`.** It's my biggest label (39%)
+  and the only one with real recall: 0.93 / 1.00 / 1.00 across seeds. Seed
+  2024 labels **all 35** test posts `hot_take`, and seed 7 labels 34 of 35.
+  Accuracy (0.40–0.46) is close to `hot_take`'s 14/35 = 0.40 share of the
+  test split, which is what always guessing the majority label scores.
+
+**Miss 1, overall accuracy.** This follows directly from the collapse. A model
+that mostly guesses `hot_take` can't score far above 0.40 on this test split,
+and mine didn't.
+
+**Miss 2, per-label F1.**
+- **`reaction`:** 0.000 on every seed. It was never predicted once in 105 test
+  predictions, and all 10 real `reaction` posts went to `hot_take` on every
+  seed. This isn't "too few examples": `reaction` has 66 posts, close to
+  `analysis`'s 73. It also doesn't look like a labelling problem on the
+  `reaction`/`hot_take` boundary. If I'd applied that boundary
+  inconsistently, I'd expect errors in both directions. Instead, *everything*
+  that isn't `analysis` goes to `hot_take`, which is what a majority-class
+  fallback looks like.
+- **`analysis`:** the one label the model sometimes separates, and when it
+  does it's usually right (precision 0.75 on seed 42, 1.00 on seed 7). But
+  recall falls from 0.27 to 0.09 to 0.00 across seeds. That's how far each
+  run got from the default before training stopped.
+- **`hot_take`:** F1 is capped near 0.58 because precision is only about
+  0.41. Most posts it calls `hot_take` aren't.
+
+**Miss 5, confidence.** Mean confidence is about 0.39–0.40 on every seed,
+barely above the 0.33 an even guess gives. So the model's "confident" third
+is only slightly confident. The gap held on two seeds (+0.273) and fell to
++0.182 on seed 2024. That is the seed where every prediction was `hot_take`,
+so confidence there can only reflect how strongly each post looked like
+`hot_take`. With 11 posts per third, the difference between hitting and
+missing the target is one post.
+
+**What the agreement report can and can't tell me here.** It's the only check
+that can separate a labelling problem from a model problem, and it came back
+30/30. That fits the diagnosis above: under the staff rules, the boundaries
+can be applied cleanly. But two things limit it as evidence about
+`labels.csv`. Those labels were AI-assisted rather than mine, and the staff
+set uses a different `reaction` definition from my r/nba one. The stronger
+evidence is the confusion matrix. Labelling inconsistency would show up as
+errors going both ways on one specific pair of labels. What I see instead is
+every label falling into one bucket, which points at training, not at my
+boundaries. The improvement run should test this directly: if more training
+steps bring `reaction` up, the labels were never the main problem.
 
 <!-- For each miss: the cause, and how you know. The four common causes are:
      too few examples for a label, a boundary you applied inconsistently, a
