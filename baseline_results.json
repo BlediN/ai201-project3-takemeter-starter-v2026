@@ -1,0 +1,209 @@
+{
+  "model": "facebook/bart-large-mnli",
+  "n": 35,
+  "seed": 42,
+  "held_out": true,
+  "used_definitions": true,
+  "scores": {
+    "n": 35,
+    "accuracy": 0.3142857142857143,
+    "f1_macro": 0.15942028985507248,
+    "per_label": {
+      "analysis": {
+        "precision": 0.3142857142857143,
+        "recall": 1.0,
+        "f1": 0.4782608695652174,
+        "support": 11
+      },
+      "hot_take": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 14
+      },
+      "reaction": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 10
+      }
+    }
+  },
+  "predictions": [
+    {
+      "text": "Robinson helped Miami make the NBA finals, he is one of purest shooters to ever play in the NBA.",
+      "gold": "analysis",
+      "predicted": "analysis"
+    },
+    {
+      "text": "You clearly didn't watch the game. Jabonte green and Duncan robinson are what brought us back from the brink.",
+      "gold": "reaction",
+      "predicted": "analysis"
+    },
+    {
+      "text": "I haven't seen the specific breakdown of Wallace's extension, but let's assume he's getting paid $27.8 million next year. I'm going to use the current NBA projection of $176 million as the salary cap for next year. So he's getting paid around 15.8% of the cap, which isn't bad in a vacuum. Some more numbers: $235 million, or 133.75% of the salary cap guaranteed to SGA, JDub, Chet, Cason, Hartenstein, Caruso, and the two rookies. $252.9 million, or 143.7% of the cap if team options for Ajay, McCain, and Jaylin are exercised Estimated tax bill:$141.04 million There are also team options for Topic and Sorber, I suppose we'll see what happens with those two.",
+      "gold": "analysis",
+      "predicted": "analysis"
+    },
+    {
+      "text": "the repeater/escalation luxury tax penalties are causing teams to break up more than the 2nd apron. Owners are using the aprons as an excuse.",
+      "gold": "hot_take",
+      "predicted": "analysis"
+    },
+    {
+      "text": "Love it. This is incredible for all the Hornets fans who thought that Lamelo was a \u201cliability, couldnt play meaningful basketball, has injury concerns, etc\u201d. This is exactly the kind of move that they deserve from the Hornets. A perpetually unserious organization. $200 mil for a guy who relies heavily on others to run the offense, while not being elite at getting his own shot or looks",
+      "gold": "hot_take",
+      "predicted": "analysis"
+    },
+    {
+      "text": "Game 1 too after scoring like 15 in the first quarter. And he had 7 points total in game 4. He was a disaster in that series on both ends of the court.",
+      "gold": "analysis",
+      "predicted": "analysis"
+    },
+    {
+      "text": "And I don't deny that we just haven't seen it lol. They missed the playoffs a few seasons in a row and ended up with Wemby and Harper.",
+      "gold": "analysis",
+      "predicted": "analysis"
+    },
+    {
+      "text": "This guy is like 2% better than Devin Vassell, getting paid almost double Yeesh",
+      "gold": "analysis",
+      "predicted": "analysis"
+    },
+    {
+      "text": "They can never make me hate PG. The early 2010\u2019s Pacers teams were some nasty defenses.",
+      "gold": "hot_take",
+      "predicted": "analysis"
+    },
+    {
+      "text": "If the Athletic needs writers they can hit me up. I'm not a writer and I don't know shit, but I'd do a better job than this bozo.",
+      "gold": "hot_take",
+      "predicted": "analysis"
+    },
+    {
+      "text": "Uhhh idk dude 28m a year for 9/3/3/2 will never not seem like an overpay tbh",
+      "gold": "analysis",
+      "predicted": "analysis"
+    },
+    {
+      "text": "Kinda. 50% is redistributed to non tax paying teams. 50% is used to fund revenue sharing, which gives money to teams with lower local revenue generation.",
+      "gold": "analysis",
+      "predicted": "analysis"
+    },
+    {
+      "text": "He's definitely starting. He literally said after the season that he wants to be starting whether in OKC or elsewhere and they immediately traded Dort and Cason re-signed so I take that as very telling",
+      "gold": "analysis",
+      "predicted": "analysis"
+    },
+    {
+      "text": "Blowing 20+ points lead? Looks like the Celtics are already in postseason form.",
+      "gold": "reaction",
+      "predicted": "analysis"
+    },
+    {
+      "text": "How would 1 game out of 82 decide any of that lol",
+      "gold": "hot_take",
+      "predicted": "analysis"
+    },
+    {
+      "text": "Caruso is 32. So it makes sense. IHart is 28. So he can probably stay with OKC if he takes a discount.",
+      "gold": "analysis",
+      "predicted": "analysis"
+    },
+    {
+      "text": "What one game against Ausar Thompson does to a mf",
+      "gold": "reaction",
+      "predicted": "analysis"
+    },
+    {
+      "text": "Carmelo didn't say the real part. Shai isn't flopping, and came to play.",
+      "gold": "reaction",
+      "predicted": "analysis"
+    },
+    {
+      "text": "That alley-oop from JB to Bron with JB mimicking wade while shooting some abysmal 3\u2019s is chef\u2019s kiss on the W.",
+      "gold": "reaction",
+      "predicted": "analysis"
+    },
+    {
+      "text": "One thing people miss is when stars take paycuts, it gives FO and owners bargaining power to go \u201cWemby is taking less than his max to help us avoid the Second apron, so why don\u2019t you role player\u201d",
+      "gold": "hot_take",
+      "predicted": "analysis"
+    },
+    {
+      "text": "Edgecombe does all of the little things that will make those 4 gel better. He plays like a 10 year vet.",
+      "gold": "hot_take",
+      "predicted": "analysis"
+    },
+    {
+      "text": "Eh. He is getting his points in now because he knows he is going to miss a lot of games this year lol",
+      "gold": "hot_take",
+      "predicted": "analysis"
+    },
+    {
+      "text": "James and Embiid played 34 and 33 minutes respectively. That's absolutely fine considering we were missing two players who definitely get minutes. I also think against a lot of teams Walker gets more minutes. Just not against a team with Drummond as the backup C.",
+      "gold": "reaction",
+      "predicted": "analysis"
+    },
+    {
+      "text": "Playing like the 7th best player on his team",
+      "gold": "hot_take",
+      "predicted": "analysis"
+    },
+    {
+      "text": "bron said see ya'll later, short commute",
+      "gold": "reaction",
+      "predicted": "analysis"
+    },
+    {
+      "text": "Tirico just said \"no, a eagle\" but the correct grammar is \"no, AN eagle\"",
+      "gold": "reaction",
+      "predicted": "analysis"
+    },
+    {
+      "text": "Philly still has dean wade good size and a good 3 pt shooter -",
+      "gold": "hot_take",
+      "predicted": "analysis"
+    },
+    {
+      "text": "seems like an influx of owners who are more focused on the bottom line, if not outright cheap. More like owners realizing that paying some role player 40m a year is not gonna make them win anything, on the contrary, they lose money on tax payments just to not win titles.",
+      "gold": "hot_take",
+      "predicted": "analysis"
+    },
+    {
+      "text": "I bet they're crying backstage rn. They were silent on some crazy sixers plays. The big one was the steal and oop(i forget who did what) but they were dead silent on a crazy sequence. Clearly biased towards knicks",
+      "gold": "reaction",
+      "predicted": "analysis"
+    },
+    {
+      "text": "For all you can say negative about Brown, he was clearly the best 2 point scorer on the team and that matters",
+      "gold": "hot_take",
+      "predicted": "analysis"
+    },
+    {
+      "text": "LaMelo\u2019s contract was way bigger. Melo got a full rookie max (ie 25% of the cap). Miller is making closer to 21% of the cap.",
+      "gold": "analysis",
+      "predicted": "analysis"
+    },
+    {
+      "text": "38% isn\u2019t good enough if 3pt shooting is your only NBA level skill. He can\u2019t do anything else on offense at this point and he\u2019s one of the worst defenders in the league",
+      "gold": "hot_take",
+      "predicted": "analysis"
+    },
+    {
+      "text": "0/7 btw, all of wemby's points came from free throws",
+      "gold": "reaction",
+      "predicted": "analysis"
+    },
+    {
+      "text": "Knicks should\u2019ve signed him. They got clowned",
+      "gold": "hot_take",
+      "predicted": "analysis"
+    },
+    {
+      "text": "You\u2019re misreading it. The players have been complaining about the \u201cmiddle class\u201d being squeezed by the aprons. The league is pointing out that all classes of players (bottom third by salary, middle third, top third) have seen similar increases in salary under the new CBA.",
+      "gold": "analysis",
+      "predicted": "analysis"
+    }
+  ]
+}

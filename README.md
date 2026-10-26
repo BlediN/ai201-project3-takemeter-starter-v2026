@@ -285,16 +285,25 @@ reviewed them.
 
 | Measure | Baseline | Trained | Difference |
 |---|---|---|---|
-| Overall accuracy |  |  |  |
-| Macro F1 |  |  |  |
-| F1 — `label_one` |  |  |  |
-| F1 — `label_two` |  |  |  |
+| Overall accuracy | 0.314 |  |  |
+| Macro F1 | 0.159 |  |  |
+| F1 — `analysis` | 0.478 |  |  |
+| F1 — `hot_take` | 0.000 |  |  |
+| F1 — `reaction` | 0.000 |  |  |
+
+The baseline is `facebook/bart-large-mnli` doing zero-shot classification on
+the 35 held-out posts in `test_split.csv`, given only my definitions from
+`label_definitions.txt`. It predicted `analysis` for all 35 posts. Its 0.314
+accuracy is just the share of test posts that really are `analysis` (11 of
+35), so it never separated the labels at all. My guess is that the `analysis`
+definition ("makes a claim and gives a specific, checkable fact... a stat, a
+record, a ranking, a roster move") is broad enough that almost every r/nba
+comment seems to fit it.
 
 **What I predicted before I looked:**
 <!-- Milestone 1 asks you to write this BEFORE seeing the trained numbers. A
      prediction made afterwards isn't one. -->
-
-**What the gap actually means:**
+I expect the trained model to beat the baseline most on **analysis**, because analytical text typically features distinct structural markers, longer length, and specialized vocabulary that make it easier for a classifier to separate, and least on **reaction**, because short reactions are often highly ambiguous and overlap heavily in tone and phrasing with hot takes, making them much harder to isolate accurately.
 <!-- If the baseline matched your trained model, your fine-tuning added
      nothing — and that is a real finding, not a failure. Say it plainly. -->
 
