@@ -1,0 +1,13 @@
+# What the hosted server (server.py on Render) installs. Exact pins: these are
+# the versions it was tested and measured with.
+#
+# No torch and no transformers on purpose. The PyTorch model peaked at 613 MB
+# and Render's free tier has 512 MB, so the server runs the ONNX export of the
+# same model through onnxruntime (labels identical on test_split.csv, checked
+# by export_onnx.py). Training and the notebook still use requirements.txt.
+
+onnxruntime==1.32.0
+tokenizers==0.22.2
+numpy==2.5.4
+fastapi==0.163.1
+uvicorn==0.54.0

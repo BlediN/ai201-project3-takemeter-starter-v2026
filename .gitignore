@@ -32,3 +32,12 @@ Thumbs.db
 # The saved TakeMeter model (capstone). ~270 MB and rebuildable from the
 # notebook: sections 1-5 plus the save cell.
 takemeter_model/
+
+# The ONNX export (capstone hosting). Only the 268 MB weights file is ignored:
+# it ships as a GitHub Release asset. The tokenizer, config and checksum next
+# to it ARE committed, because the server needs them.
+takemeter_onnx/model.onnx
+takemeter_onnx/model.part
+
+# Local server log. The hosted run record is pasted into README.md instead.
+logs/server_log.jsonl

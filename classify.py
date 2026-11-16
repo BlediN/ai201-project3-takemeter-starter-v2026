@@ -97,25 +97,77 @@ def check_post(text):
 
 # ── Model ────────────────────────────────────────────────────────────────────
 
-def load_model(model_dir):
-    """Load tokenizer + model + label names, or raise FatalError saying why."""
-    path = Path(model_dir)
-    rebuild = ("Build it by running notebook sections 1-5 and the "
-               "'Save the model' cell (see RUNNING.md).")
+REBUILD_HINT = ("Build it by running notebook sections 1-5 and the "
+                "'Save the model' cell (see RUNNING.md).")
 
+
+def _short(e):
+    """An exception as one short line, for error messages."""
+    first = str(e).strip().splitlines()[0] if str(e).strip() else ""
+    return f"{type(e).__name__}: {first[:120] + '…' if len(first) > 120 else first}"
+
+
+def _read_labels_and_length(path):
+    """Label order (from config.json) and max_length (from takemeter_meta.json)."""
+    try:
+        config = json.loads((path / "config.json").read_text(encoding="utf-8"))
+        id2label = config["id2label"]
+        labels = [id2label[str(i)] for i in range(len(id2label))]
+    except (OSError, ValueError, KeyError) as e:
+        raise FatalError(f"{path / 'config.json'} is unreadable ({_short(e)}). {REBUILD_HINT}")
+
+    max_length = 128
+    meta_path = path / "takemeter_meta.json"
+    if meta_path.exists():
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            max_length = int(meta.get("max_length", max_length))
+        except (ValueError, TypeError) as e:
+            raise FatalError(f"{meta_path} is not valid JSON ({e})")
+        if meta.get("labels") and meta["labels"] != labels:
+            raise FatalError(f"label mismatch: config.json has {labels}, "
+                             f"takemeter_meta.json says {meta['labels']}")
+    return labels, max_length
+
+
+def load_model(model_dir):
+    """
+    Load a TakeMeter model folder, or raise FatalError saying why.
+
+    Two kinds of folder work, picked by what's inside:
+      model.onnx         -> onnxruntime + tokenizers (no torch; what Render runs)
+      model.safetensors  -> PyTorch + transformers (what the notebook saves)
+    Both give the same labels: export_onnx.py checks that on test_split.csv.
+
+    Returns a dict with predict(text) -> (probabilities, n_tokens), plus the
+    labels, max_length and which backend/runtime was used.
+    """
+    path = Path(model_dir)
     if not path.exists():
-        raise FatalError(f"model folder not found: {path}. {rebuild}")
+        raise FatalError(f"model folder not found: {path}. {REBUILD_HINT}")
     if not path.is_dir():
         raise FatalError(f"model path is not a folder: {path}")
 
-    needed = ["config.json", "model.safetensors"]
+    backend = "onnx" if (path / "model.onnx").exists() else "torch"
+    needed = ["config.json", "model.onnx" if backend == "onnx" else "model.safetensors"]
     missing = [f for f in needed if not (path / f).exists()]
-    if not ((path / "tokenizer.json").exists() or (path / "vocab.txt").exists()):
+    if backend == "onnx" and not (path / "tokenizer.json").exists():
+        missing.append("tokenizer.json")
+    if backend == "torch" and not ((path / "tokenizer.json").exists()
+                                   or (path / "vocab.txt").exists()):
         missing.append("tokenizer.json or vocab.txt")
     if missing:
         raise FatalError(f"model folder {path} is incomplete, missing: "
-                         f"{', '.join(missing)}. {rebuild}")
+                         f"{', '.join(missing)}. {REBUILD_HINT}")
 
+    labels, max_length = _read_labels_and_length(path)
+    loader = _load_onnx if backend == "onnx" else _load_torch
+    predict, runtime = loader(path, max_length)
+    return {"predict": predict, "labels": labels, "max_length": max_length,
+            "backend": backend, "runtime": runtime}
+
+
+def _load_torch(path, max_length):
     # Imported here so `--help` and input errors don't wait on torch.
     try:
         import torch
@@ -124,52 +176,77 @@ def load_model(model_dir):
     except ImportError as e:
         raise FatalError(f"a package is missing ({e.name}). "
                          "Run: pip install -r requirements.txt")
-
     hf_logging.set_verbosity_error()  # no "sequence longer than 512" noise
 
     try:
         tokenizer = AutoTokenizer.from_pretrained(str(path))
-        model = AutoModelForSequenceClassification.from_pretrained(str(path))
+        model = AutoModelForSequenceClassification.from_pretrained(str(path)).eval()
     except Exception as e:
-        first_line = str(e).strip().splitlines()[0] if str(e).strip() else ""
-        if len(first_line) > 120:
-            first_line = first_line[:120] + "…"
-        raise FatalError(f"model folder {path} could not be loaded "
-                         f"({type(e).__name__}: {first_line}). {rebuild}")
-    model.eval()
+        raise FatalError(f"model folder {path} could not be loaded ({_short(e)}). "
+                         f"{REBUILD_HINT}")
 
-    labels = [model.config.id2label[i] for i in range(model.config.num_labels)]
-    max_length = 128
-    meta_path = path / "takemeter_meta.json"
-    if meta_path.exists():
-        try:
-            meta = json.loads(meta_path.read_text(encoding="utf-8"))
-            max_length = int(meta.get("max_length", max_length))
-            if meta.get("labels") and meta["labels"] != labels:
-                raise FatalError(f"label mismatch: model has {labels}, "
-                                 f"takemeter_meta.json says {meta['labels']}")
-        except (ValueError, TypeError) as e:
-            raise FatalError(f"{meta_path} is not valid JSON ({e})")
+    def predict(text):
+        n_tokens = len(tokenizer(text, truncation=False)["input_ids"])
+        enc = tokenizer(text, truncation=True, max_length=max_length, return_tensors="pt")
+        with torch.no_grad():
+            probs = torch.softmax(model(**enc).logits[0], dim=-1)
+        return [float(p) for p in probs], n_tokens
 
-    return {"torch": torch, "tokenizer": tokenizer, "model": model,
-            "labels": labels, "max_length": max_length}
+    return predict, f"torch {torch.__version__}"
+
+
+def _load_onnx(path, max_length):
+    try:
+        import numpy as np
+        import onnxruntime as ort
+        from tokenizers import Tokenizer
+    except ImportError as e:
+        raise FatalError(f"a package is missing ({e.name}). "
+                         "Run: pip install -r requirements-server.txt")
+
+    try:
+        tokenizer = Tokenizer.from_file(str(path / "tokenizer.json"))
+        tokenizer.no_truncation()
+        tokenizer.no_padding()
+        sep_id = tokenizer.token_to_id("[SEP]")
+
+        options = ort.SessionOptions()
+        # One thread: Render's free instance has a fraction of one CPU, and
+        # extra threads only add memory there.
+        options.intra_op_num_threads = 1
+        options.inter_op_num_threads = 1
+        options.enable_cpu_mem_arena = False
+        session = ort.InferenceSession(str(path / "model.onnx"), options,
+                                       providers=["CPUExecutionProvider"])
+    except Exception as e:
+        raise FatalError(f"model folder {path} could not be loaded ({_short(e)}). "
+                         f"{REBUILD_HINT}")
+
+    def predict(text):
+        enc = tokenizer.encode(text)
+        ids = enc.ids
+        n_tokens = len(ids)
+        if n_tokens > max_length:
+            # Same as transformers' truncation for one sequence:
+            # [CLS] first (max_length - 2) tokens [SEP]
+            ids = ids[:max_length - 1] + [sep_id]
+        input_ids = np.array([ids], dtype=np.int64)
+        attention = np.ones_like(input_ids)
+        logits = session.run(["logits"], {"input_ids": input_ids,
+                                          "attention_mask": attention})[0][0]
+        exp = np.exp(logits - logits.max())
+        return [float(p) for p in exp / exp.sum()], n_tokens
+
+    return predict, f"onnxruntime {ort.__version__}"
 
 
 def classify_one(m, text):
     """Label one post that already passed check_post. Returns a partial record."""
-    torch, tokenizer, model = m["torch"], m["tokenizer"], m["model"]
-
-    n_tokens = len(tokenizer(text, truncation=False)["input_ids"])
-    enc = tokenizer(text, truncation=True, max_length=m["max_length"],
-                    return_tensors="pt")
-    with torch.no_grad():
-        logits = model(**enc).logits[0]
-    probs = torch.softmax(logits, dim=-1)
-    best = int(probs.argmax())
-
+    probs, n_tokens = m["predict"](text)
+    best = max(range(len(probs)), key=probs.__getitem__)
     return {
         "label": m["labels"][best],
-        "confidence": round(float(probs[best]), 4),
+        "confidence": round(probs[best], 4),
         "tokens": n_tokens,
         "truncated": n_tokens > m["max_length"],
     }
@@ -381,7 +458,7 @@ def main(argv=None):
     log.write("run_end", source=source, model=args.model, n_posts=len(posts),
               **counts, model_load_ms=model_load_ms, total_ms=total_ms,
               mean_latency_ms_ok=mean_ms, python=platform.python_version(),
-              torch=m["torch"].__version__)
+              backend=m["backend"], runtime=m["runtime"])
     logged_to = args.log if log.active else None
     log.close()
 

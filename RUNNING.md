@@ -8,112 +8,211 @@ nothing hosted.
 
 ---
 
-## Capstone: running `classify.py` (Path B, local with logs)
+## Capstone: hosted on Render (Path A)
 
-`classify.py` is the run path for the capstone. It labels r/nba posts with the
-trained model, outside the notebook, and writes a structured log of every run.
+TakeMeter runs as a web service on Render's free tier. The same model also
+runs locally from the command line with `classify.py` (see **Running it
+locally** below).
 
-### The command
+| | |
+|---|---|
+| **URL** | `https://<FILL IN>.onrender.com` (set after the first deploy) |
+| **Platform** | Render, free web service (512 MB memory, shared CPU, sleeps after ~15 min idle) |
+| **Config** | [`render.yaml`](render.yaml) (Render Blueprint) |
+| **Build command** | `pip install -r requirements-server.txt && python fetch_model.py` |
+| **Start command** | `uvicorn server:app --host 0.0.0.0 --port $PORT` |
+| **Health check** | `GET /health` |
 
-From the repo folder, with the `.venv` active:
+### What's on the URL
+
+| Endpoint | What it does |
+|---|---|
+| `GET /` | A page with a text box. Paste a comment and get its label |
+| `POST /classify` | `{"text": "..."}` or `{"posts": ["...", ...]}` (max 50). Returns the label, confidence, token count, `truncated` flag, or the rejection reason for each post |
+| `GET /health` | `200` with memory use if the model is loaded. `503` with the reason if it isn't |
+| `GET /logs?n=50` | The last *n* structured log records (max 500), one JSON object per line. Needs `?token=...` if `LOGS_TOKEN` is set |
+| `GET /docs` | Auto-generated API docs |
+
+```bash
+curl -X POST https://<FILL IN>.onrender.com/classify \
+     -H "Content-Type: application/json" \
+     -d '{"text": "Tatum shot 4/19 in the last 3 games, he is in a real slump"}'
+```
+
+⚠️ **The first request after ~15 idle minutes takes about a minute.** The free
+instance sleeps, and waking it means starting Python and loading the model.
+Warm requests are fast. Any timing in this repo says which kind it measured.
+
+### Why the hosted version runs ONNX, not PyTorch
+
+Serving the PyTorch model peaked at **613 MB** (measured on 2026-11-15:
+torch + transformers + the model + 6 inferences). Render's free tier has 512
+MB, so it would be killed on the first request. The server runs the same
+trained weights exported to ONNX and served by `onnxruntime`, which peaked at
+**427 MB** while loading and settled at **~362 MB** with the web server
+(measured the same way, on Windows).
+
+It's the same model. `export_onnx.py` checks the two on every post in
+`test_split.csv`, and the labels match on 35/35, with the largest probability
+difference 3×10⁻⁷. `classify.py` loads either kind of folder and gave
+identical labels, confidences and token counts on 37 posts, including two
+truncated ones.
+
+### How it got there (deploying from scratch)
+
+The model weights (`model.onnx`, 268 MB) are over GitHub's 100 MB file limit,
+so they ship as a **GitHub Release asset** and the Render build downloads
+them. Everything else is in git.
+
+**1. Build the model and the ONNX export, locally (once).**
+
+```bash
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+pip install onnx==1.23.2 onnxruntime==1.32.0        # only needed for the export
+```
+
+Run notebook sections 1–5 and the **"Save the model for `classify.py`"** cell
+(writes `takemeter_model/`, about 10 min on CPU). Then:
+
+```bash
+python export_onnx.py
+# wrote takemeter_onnx/ (269 MB)
+# labels match on 35/35 posts in test_split.csv
+```
+
+This writes `takemeter_onnx/`. The small files in it (tokenizer, config,
+`model.onnx.sha256`) are committed. `model.onnx` itself is gitignored.
+
+**2. Upload `model.onnx` as a release asset.** On GitHub: **Releases → Draft a
+new release**. Tag `model-v1`, title `TakeMeter ONNX model`. Drag
+`takemeter_onnx/model.onnx` into the assets box and publish. The download
+URL is:
+
+```
+https://github.com/<user>/<repo>/releases/download/model-v1/model.onnx
+```
+
+The repo must be **public**, or the build can't download it. If you rebuild
+the model, re-run `export_onnx.py`, commit the new `model.onnx.sha256` and
+upload the new file. `fetch_model.py` refuses a file whose checksum doesn't
+match.
+
+**3. Create the service on Render.** Sign in at render.com with GitHub. Go to
+**New → Blueprint**, pick this repo, and Render reads `render.yaml`. Paste
+the URL from step 2 into `MODEL_URL` when asked. `LOGS_TOKEN` is optional.
+Then click **Apply**. The build installs `requirements-server.txt` (no torch)
+and runs `fetch_model.py`, which downloads and checksums the model. Then
+Render starts uvicorn and polls `/health`.
+
+**4. Check it.** Open `https://<service>.onrender.com/health`. It should say
+`"status": "ok"` and `"backend": "onnx"`. Every push to `main` redeploys.
+
+### What the server needs
+
+| | |
+|---|---|
+| Python | 3.13 (`PYTHON_VERSION` in `render.yaml`; tested locally on 3.13.16) |
+| Packages | [`requirements-server.txt`](requirements-server.txt), exact pins: `onnxruntime==1.32.0 tokenizers==0.22.2 numpy==2.5.4 fastapi==0.163.1 uvicorn==0.54.0`. No torch, transformers or pandas |
+| Model files | `takemeter_onnx/`: `model.onnx` 268 MB (release asset) plus tokenizer and config (~1 MB, committed) |
+| Memory | ~362 MB steady, 427 MB peak while loading (measured locally; `/health` and every `request` log record report the real numbers on Render) |
+| Env vars | `MODEL_URL` (required at build), `LOGS_TOKEN` (optional), `TAKEMETER_MODEL` / `TAKEMETER_LOG` (optional overrides) |
+
+### The log
+
+Every event is one JSON object per line. It goes to stdout, so it shows in
+Render's **Logs** tab, and to `logs/server_log.jsonl`, which `GET /logs`
+serves.
+
+| `event` | When | Fields |
+|---|---|---|
+| `startup` | The model loaded | `model_load_ms`, `backend`, `runtime`, `labels`, `rss_mb`, `peak_rss_mb`, `python` |
+| `fatal` | The model didn't load (the server stays up and answers `503`) | `error`, `rss_mb`, `peak_rss_mb` |
+| `post` | Each post in a request | `ts`, `run_id` (= request id), `input` (first 2,000 chars), `input_chars`, `status` (`ok`/`rejected`/`error`), `label`, `confidence`, `tokens`, `truncated`, `reason`, `latency_ms` |
+| `request` | Each `/classify` call, plus any failed `/health` | `path`, `status_code`, `latency_ms`, `n_posts`, `error`, `rss_mb`, `peak_rss_mb` |
+
+Bad requests leave a record too: not JSON (`400`), wrong shape (`400`), over
+50 posts or over 1 MB (`413`), and no model (`503`).
+
+⚠️ **The free instance's disk is wiped when it sleeps.** Copy the records you
+need from `/logs` (or the Logs tab) into `README.md` and commit them **in
+the same session**. The copy in the repo is the one that lasts.
+
+### Measuring cost
+
+```bash
+python measure_cost.py https://<service>.onrender.com --runs 10
+```
+
+The script sends one warm-up request (that's the cold-start time if the
+instance was asleep), then 10 timed requests with one post each. It reports
+the server's own `latency_ms` and the round trip seen from your machine. It
+uses only the standard library.
+
+### When the hosted version goes wrong
+
+| What you see | What it means |
+|---|---|
+| Build fails at `fetch_model.py` with `HTTP 404` | `MODEL_URL` is wrong, or the repo/release is private |
+| Build fails with `checksum mismatch` | The uploaded `model.onnx` isn't the one `model.onnx.sha256` describes. Re-export and re-upload, or commit the matching checksum |
+| Deploy fails, "Out of memory (used over 512Mi)" in Events | The model didn't fit. Check `peak_rss_mb` in the last `startup` record |
+| `/health` returns `503` | The model didn't load. The `error` field says why |
+| First request takes about a minute | The instance was asleep. Expected on the free tier |
+| `/logs` is empty | The instance restarted and wiped its disk. Use Render's Logs tab |
+
+---
+
+## Running it locally
+
+Two local run paths, no Render needed.
+
+**The web server, exactly as Render runs it:**
+
+```bash
+pip install -r requirements-server.txt
+python export_onnx.py              # or MODEL_URL=... python fetch_model.py
+uvicorn server:app --port 8000     # then open http://127.0.0.1:8000
+```
+
+**The command line (`classify.py`):**
 
 ```bash
 python classify.py --csv test_split.csv
-```
-
-Or with posts typed directly:
-
-```bash
 python classify.py "Jokic is the best player alive and it's not close" "WHAT A BLOCK"
 ```
 
 Each post prints one line: its label and confidence, `REJECTED` with a reason,
-or `ERROR`. The run ends with a summary and the timing. Every post is also
-appended to `logs/classify_log.jsonl` (see **The log** below).
+or `ERROR`. Every post is also appended to `logs/classify_log.jsonl` (same
+fields as the server's `post` records, plus a `run_end` summary).
 
 | Option | What it does |
 |---|---|
-| `--csv FILE` | Classify the `text` column of a CSV, instead of posts on the command line |
-| `--model DIR` | Model folder (default `takemeter_model`) |
+| `--csv FILE` | Classify the `text` column of a CSV |
+| `--model DIR` | `takemeter_model` (PyTorch, default) or `takemeter_onnx` (ONNX) |
 | `--log FILE` | Where the log goes (default `logs/classify_log.jsonl`, appended to) |
 | `--no-log` | Don't write a log |
 
 **Exit codes:** `0` means the run finished, even if some posts were rejected.
-Rejecting bad posts is normal output. `2` means the run couldn't start: no
-model, an unreadable CSV, a missing `text` column or no input. The message
-says which.
+`2` means it couldn't start: no model, an unreadable CSV, no `text` column or
+no input.
 
-### From a clean checkout
-
-The model isn't in git (it's 269 MB, see `.gitignore`), so a fresh clone
-builds it once:
-
-```bash
-git clone <this repo> && cd <repo folder>
-python -m venv .venv
-source .venv/bin/activate              # Windows: .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python test.py                         # must say 0 failed
-```
-
-Then open `takemeter.ipynb` with the `.venv` kernel and run **sections 1–5
-and the "Save the model for `classify.py`" cell** right after section 5.
-That's about 10 minutes on a CPU. It writes `takemeter_model/`. With
-`SEED = 42` and `EPOCHS = 10` it rebuilds the same model: a headless re-run
-on 2026-11-15 reproduced the committed `results.json` and `test_split.csv`
-exactly. After that, `python classify.py ...` is the only command you need.
-
-### What the environment needs
-
-| | |
-|---|---|
-| Python | 3.13.16 (`requirements.txt` allows 3.11–3.13, not 3.14) |
-| Device | CPU only. No GPU, no API key, no network after setup |
-| Model files | `takemeter_model/`, 269 MB in total (`model.safetensors` 268 MB, plus tokenizer and config) |
-| Base model download | `distilbert-base-uncased`, about 270 MB, fetched once by the notebook |
-| Memory | Peak 623 MB while classifying the 35-post `test_split.csv` (Windows peak working set, measured 2026-11-15). Training peaks around 2.1 GB |
-
-The exact versions this was run and logged with (`pip freeze`), all inside the
-ranges in `requirements.txt`:
-
-```
-torch==2.14.1          transformers==4.57.6    tokenizers==0.22.2
-safetensors==0.8.0     pandas==2.3.3           numpy==2.5.4
-scikit-learn==1.9.1    datasets==3.6.0         accelerate==1.15.0
-```
-
-To install exactly these versions instead of the ranges:
-`pip install torch==2.14.1 transformers==4.57.6 tokenizers==0.22.2 safetensors==0.8.0 pandas==2.3.3 numpy==2.5.4 scikit-learn==1.9.1 datasets==3.6.0 accelerate==1.15.0`
-
-### The log
-
-`logs/classify_log.jsonl` has one JSON object per line. Records are flushed as
-they're written, so a run that dies halfway still leaves its earlier records.
-
-| `event` | Written | Fields |
-|---|---|---|
-| `post` | Once per post | `ts`, `run_id`, `source`, `row`, `input` (first 2,000 chars), `input_chars`, `status` (`ok` / `rejected` / `error`), `label`, `confidence`, `tokens`, `truncated`, `reason`, `latency_ms` |
-| `run_end` | Once per finished run | `n_posts`, `ok`, `rejected`, `error`, `model_load_ms`, `total_ms`, `mean_latency_ms_ok`, `python`, `torch` |
-| `fatal` | A run that couldn't start | `error`, `total_ms` |
-
-`run_id` ties a run's records together. `latency_ms` covers one post end to
-end (input checks, tokenizing and the forward pass). `model_load_ms` is the
-one-time startup cost, and it's paid on every run.
-
-If the log file can't be written, `classify.py` prints one warning and
-classifies anyway. Losing the log doesn't lose the labels.
+Local environment: Python 3.13.16, CPU only. Exact versions it was run with:
+`torch==2.14.1 transformers==4.57.6 tokenizers==0.22.2 safetensors==0.8.0
+pandas==2.3.3 numpy==2.5.4 scikit-learn==1.9.1 datasets==3.6.0
+accelerate==1.15.0`. Peak memory classifying the 35-post `test_split.csv`
+with PyTorch was 623 MB.
 
 ### When `classify.py` goes wrong
 
 | What you see | What it means |
 |---|---|
-| `error: model folder not found: takemeter_model` | You haven't built the model yet. See **From a clean checkout** |
-| `error: model folder ... is incomplete` / `could not be loaded` | The folder is half-copied or corrupt. Delete it and re-run the save cell |
-| `error: CSV has no \`text\` column` | The message lists the columns it did find. Rename yours to `text` |
+| `error: model folder not found` | Build it: notebook sections 1–5 plus the save cell |
+| `error: model folder ... is incomplete` / `could not be loaded` | The folder is half-copied or corrupt. Delete it and rebuild |
+| `error: CSV has no \`text\` column` | The message lists the columns it did find |
 | `error: CSV is not UTF-8 text` | Re-save the file as UTF-8 |
-| `REJECTED empty` / `no_words` / `link_only` / `too_long` | That post can't be classified. The rest of the run carries on |
-| `REJECTED malformed_row` | That CSV line had the wrong number of fields (often an unquoted comma). It's listed at the end of the run |
-| `[truncated: N tokens]` | The post was labelled, but the model only read the first 128 tokens |
+| `REJECTED empty` / `no_words` / `link_only` / `too_long` / `not_text` / `missing` | That post can't be classified. The rest carries on |
+| `REJECTED malformed_row` | That CSV line had the wrong number of fields. It's listed at the end |
+| `[truncated: N tokens]` | Labelled, but the model only read the first 128 tokens |
 | `warning: can't write log` | The log path is read-only or is a folder. The labels still print |
 
 ---
@@ -344,6 +443,9 @@ README has a block to fill in for each one.
 | Notebook: sections 1–5 | Train once, write `results.json` — **unit 5** |
 | Notebook: sections 6–7 | Three seeds and the matrix — **unit 6** |
 | `python classify.py --csv FILE` / `"post"` | Label posts with the saved model, and log the run. **Capstone** |
+| `python export_onnx.py` | Export the saved model to ONNX for hosting, and check it matches. **Capstone** |
+| `uvicorn server:app --port 8000` | The web service, run locally the way Render runs it. **Capstone** |
+| `python measure_cost.py URL` | Ten timed requests against a running server. **Capstone** |
 
 ---
 
@@ -399,6 +501,11 @@ README has a block to fill in for each one.
 | `classify.py` | Labels posts with the saved model, outside the notebook. **Capstone** |
 | `takemeter_model/` | The saved model. Built by the notebook's save cell, **not committed** |
 | `logs/classify_log.jsonl` | Structured log of every `classify.py` run. **Commit it**, it's the run record |
+| `server.py` | The hosted web service (Render). **Capstone** |
+| `render.yaml`, `requirements-server.txt` | Render config and the server's pinned packages. **Capstone** |
+| `fetch_model.py` | Downloads and checksums `model.onnx` during the Render build. **Capstone** |
+| `export_onnx.py`, `takemeter_onnx/` | The ONNX export the server runs. `model.onnx` is a release asset, not in git |
+| `measure_cost.py` | Measures cost per run against a live server. **Capstone** |
 
 ---
 

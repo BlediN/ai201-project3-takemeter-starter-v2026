@@ -1,0 +1,12 @@
+{
+  "labels": [
+    "analysis",
+    "hot_take",
+    "reaction"
+  ],
+  "max_length": 128,
+  "base_model": "distilbert-base-uncased",
+  "seed": 42,
+  "epochs": 10,
+  "test_accuracy": 0.6
+}

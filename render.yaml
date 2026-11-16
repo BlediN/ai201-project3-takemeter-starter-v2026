@@ -1,0 +1,16 @@
+# Render Blueprint for TakeMeter (capstone, Path A). See RUNNING.md.
+services:
+  - type: web
+    name: takemeter
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-server.txt && python fetch_model.py
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.1"
+      - key: MODEL_URL
+        sync: false        # Render asks for it: the model.onnx release-asset URL
+      - key: LOGS_TOKEN
+        sync: false        # optional: if set, /logs needs ?token=<this>
