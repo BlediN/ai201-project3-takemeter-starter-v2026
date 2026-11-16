@@ -1103,3 +1103,102 @@ median server 239.5 ms · max round trip 514.7 ms
 ```
 C5 memory       startup peak 437.7 MiB  after batch 440.6 MiB
 ```
+
+**Verdicts and Diagnosis**
+
+| # | Criterion | Target | Before | Verdict |
+|---|---|---|---|---|
+| 1 | Bad input gets no label and leaves a record | 15/15 and 15/15, every run | 15/15 · 15/15 on all 3 | **MET** |
+| 2 | Hosted answers match the trained model | 229/229 and 229/229, every run | 229 · 200 · 150 | **MISSED** |
+| 3 | Warm single post | median ≤ 250 ms and every round trip ≤ 1,000 ms, every run | 162.2 / 239.5 / 148.4 ms; max 605.5 ms | **MET** |
+| 4 | 50-post batch of long posts | ≤ 30,000 ms, every run | 43,651.5 / 44,114.2 / 43,763.6 ms | **MISSED** |
+| 5 | Memory headroom | ≤ 480 MiB, every boot | highest 473.2 MiB | **MET** |
+
+*Miss 2: answers match the trained model (229, 200, 150 of 229).*
+The stage is **the request handler, `classify_endpoint()` in `server.py`**.
+It's an `async def`, but it ran the model loop (`classify.run_post()` for each
+post) directly on the server's one event loop. A 50-post batch held that loop
+for 13–17 s, and during that time the server couldn't answer **any** other
+request, including the `GET /health` that Render polls. Render gives
+`/health` 5 seconds. Once it doesn't answer in time, Render marks the instance
+failed and restarts it: *"HTTP health check failed (timed out after 5
+seconds) while running your code"* (Events, 04:37 UTC, run 2). The batch in
+flight, or the next one, gets Render's `502`, and the restart costs 32–37 s.
+Evidence that this is the mechanism and not something else:
+- **Not memory.** Just before run 2's crash, `rss_mib` was 371.6–373.8,
+  140 MiB under the limit. Run 1 survived the same batches at 473 MiB.
+- **Not the ONNX swap or the tokenizer.** Across the three runs, 579 posts
+  got an answer, and 0 of them differed from the PyTorch model in label or
+  `truncated`.
+- **The block is real.** Locally, `/health` took 7.7 s to answer during an
+  8.3 s batch. On Render, my own `/health` probe got a `502` in the middle of
+  run 1's 43 s C4 batch, while the instance stayed up.
+- **Why only sometimes.** C2 sends five batches back to back, so the loop is
+  blocked for about 65 s with gaps of under a second. Whether Render restarts
+  the instance depends on how many of its checks land inside that stretch.
+  Run 1 got lucky, and runs 2 and 3 didn't.
+
+The criterion was written to catch a *correctness* problem (ONNX vs
+PyTorch). It caught an *availability* problem instead. That's not a broken
+criterion: "229/229 answered and matching" is still exactly what I need from
+the URL, and it measured cleanly. The correctness half held: 0 mismatches in
+579 answers.
+
+*Miss 4: 50-post batch (43.7–44.1 s against 30 s).*
+The stage is **inference, the ONNX forward pass inside `classify.run_post()`
+→ `predict()` in `classify.py`**, which runs **one post at a time, in
+series**. The mechanism is that its cost grows with **tokens per post**, and
+on Render's shared CPU that growth is steep. The 39-token post in criterion
+3 costs ~160 ms. Each 222-token post is cut to 128 tokens, but still costs
+~875 ms (43,763.6 ms / 50). 50 of them add up to 44 s. To hit 30 s, a full
+128-token post would have to cost ≤ 600 ms. My target assumed a long post
+cost about what my laptop showed in Milestone 3, scaled up. In fact Render
+is ~6× slower than my laptop on long posts (7.1 s for the same batch
+locally), against ~3× on short ones.
+
+*The pattern: one problem, two symptoms.* Both misses come from the same
+place: **the model work sits inside the request handler, runs post by post,
+and runs on the event loop**. Miss 4 is that work's cost (44 s for the
+largest batch I allow). Miss 2 is where it's paid: on the only thread that
+answers `/health`, so a slow batch turns into a dead service. The 32 MiB
+memory worry I wrote criterion 5 about never materialised: 473.2 MiB at
+worst.
+
+*Met, and were they set low?* Criterion 1 (15/15) is all-or-nothing and
+can't really be tighter. Criterion 3 passed, but run 2's median was 239.5 ms
+against 250, so it isn't a soft target. Criterion 5 passed with 7 MiB to
+spare on run 1. None were soft, so I'm not tightening any.
+
+No criterion is revised. All five measured what they said.
+
+**The Improvement**
+
+*What I changed:* one thing in `server.py`. The model loop moved out of
+`classify_endpoint()` into a plain function, `_classify_posts()`, and the
+handler now runs it in a worker thread:
+`results = await run_in_threadpool(_classify_posts, posts, request_id)`.
+Validation, logging, the model, the limits and every response field are
+unchanged. onnxruntime releases Python's GIL during the forward pass, so the
+event loop stays free to answer `/health` while a batch runs.
+
+*Which diagnosis it follows:* miss 2's. The event loop was blocked, so
+`/health` timed out and Render restarted the instance. I picked it over
+miss 4's cost because a restart takes the URL down **for everyone** for
+30+ seconds and loses in-flight work and logs. A slow batch only makes the
+person who sent it wait.
+
+*Local check before deploying* (the same test that showed the block, 50
+posts of 222 tokens):
+
+| During the batch | Before the fix | After the fix |
+|---|---|---|
+| `GET /health` | 7.7 s | 0.003–0.005 s (5 probes) |
+| A single post sent mid-batch | waits for the batch | 0.016 s |
+| The batch itself | 8.3 s | 7.1 s, 50/50 labelled, all `truncated: true` |
+
+*What I expect, written before the after-runs:* criterion 2 goes to 229/229
+on all three runs, because the instance stops getting restarted. **Criterion
+4 stays missed.** The fix moves the work but doesn't make it smaller, so the
+batch should still take ~44 s. Criteria 1, 3 and 5 should be unchanged.
+There's a risk on Render's fraction of one CPU: the health thread and the
+model thread now compete for CPU, so batch times could get slightly worse.

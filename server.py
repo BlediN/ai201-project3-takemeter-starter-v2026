@@ -37,6 +37,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 
 import classify
@@ -139,6 +140,24 @@ def _finish(request_id, path, status, t0, payload, n_posts=0, error=None):
     return JSONResponse(payload, status_code=status)
 
 
+def _classify_posts(posts, request_id):
+    """The model work for one request. Runs in a worker thread (see below)."""
+    results = []
+    for i, text in enumerate(posts, 1):
+        p0 = time.perf_counter()
+        record = classify.run_post(MODEL, text)  # never raises
+        latency_ms = round((time.perf_counter() - p0) * 1000, 1)
+        logged = dict(record)
+        logged["input_chars"] = len(logged["input"])
+        logged["input"] = logged["input"][:classify.LOG_INPUT_CHARS]
+        log.write("post", run_id=request_id, source="http", row=i,
+                  latency_ms=latency_ms, **logged)
+        results.append({k: record[k] for k in
+                        ("status", "label", "confidence", "tokens", "truncated", "reason")}
+                       | {"latency_ms": latency_ms})
+    return results
+
+
 # ── Endpoints ────────────────────────────────────────────────────────────────
 
 @app.post("/classify")
@@ -173,19 +192,12 @@ async def classify_endpoint(request: Request):
     else:
         posts = [data["text"]]
 
-    results = []
-    for i, text in enumerate(posts, 1):
-        p0 = time.perf_counter()
-        record = classify.run_post(MODEL, text)  # never raises
-        latency_ms = round((time.perf_counter() - p0) * 1000, 1)
-        logged = dict(record)
-        logged["input_chars"] = len(logged["input"])
-        logged["input"] = logged["input"][:classify.LOG_INPUT_CHARS]
-        log.write("post", run_id=request_id, source="http", row=i,
-                  latency_ms=latency_ms, **logged)
-        results.append({k: record[k] for k in
-                        ("status", "label", "confidence", "tokens", "truncated", "reason")}
-                       | {"latency_ms": latency_ms})
+    # Capstone fix (Milestone 6): the model work runs in a worker thread, not
+    # on the event loop. Before this, a 50-post batch held the loop for 15-44 s,
+    # /health couldn't answer, and Render killed the instance after its 5 s
+    # health-check timeout. onnxruntime releases the GIL during inference, so
+    # the loop stays free to answer /health (and anything else) meanwhile.
+    results = await run_in_threadpool(_classify_posts, posts, request_id)
 
     return _finish(request_id, "/classify", 200, t0,
                    {"results": results, "backend": MODEL["backend"]}, n_posts=len(posts))
