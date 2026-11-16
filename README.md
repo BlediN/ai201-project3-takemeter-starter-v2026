@@ -1202,3 +1202,110 @@ on all three runs, because the instance stops getting restarted. **Criterion
 batch should still take ~44 s. Criteria 1, 3 and 5 should be unchanged.
 There's a risk on Render's fraction of one CPU: the health thread and the
 model thread now compete for CPU, so batch times could get slightly worse.
+
+**Run Log — After**
+
+The same five criteria, the same script (`run_criteria.py --label after`),
+three runs on three separate boots, after deploying the fix (`423182a`).
+Results are in `results_capstone_after_trialN.json`, and server logs in
+`logs/capstone_after_trialN_server.jsonl`.
+
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+|---|---|---|---|---|---|
+| 1. Bad input gets no label and leaves a record | 15/15 handled and 15/15 logged | 15/15 · 15/15 | 15/15 · 15/15 | 15/15 · 15/15 | **MET** |
+| 2. Hosted answers match the trained model | 229/229 labels and 229/229 `truncated` | 229/229 · 229/229 | 229/229 · 229/229 | 229/229 · 229/229 | **MET** |
+| 3. Warm single post | median server ≤ 250 ms and every round trip ≤ 1,000 ms | 173.4 ms · 397.7 ms | **266.4 ms** · 504.7 ms | 166.3 ms · 532.1 ms | **MISSED** |
+| 4. 50-post batch of long posts | server `latency_ms` ≤ 30,000 ms | 43,731.1 ms | 44,479.5 ms | 45,422.3 ms | **MISSED** |
+| 5. Memory headroom | `peak_rss_mib` ≤ 480 at startup and after the batch | 444.5 · 444.5 | 444.6 · 444.6 | 466.8 · **501.2** | **MISSED** |
+
+Deviations, stated plainly:
+- **Run 3 started 1 min 56 s after run 2 ended**, not the ≥ 5 minutes
+  `criteria.md` sets. I restarted the service early. It was still a separate,
+  fresh boot (33 s uptime), so no load carried over from run 2. But it breaks
+  my own protocol, so I'm noting it, not hiding it. I didn't re-run it,
+  because replacing a run with a bad result is exactly what the protocol is
+  there to stop.
+- **Run 1's boot had one extra 50-post batch** before the trial: my smoke
+  test that `/health` answers mid-batch after the deploy (it did, in
+  0.195 s). That batch is in run 1's log at 05:03:14. It can only have
+  raised run 1's memory, and run 1's memory was the lowest of the three.
+
+**Before and after, side by side**
+
+| Criterion | Target | Before (runs 1 · 2 · 3) | Before | After (runs 1 · 2 · 3) | After |
+|---|---|---|---|---|---|
+| 1. Bad input | 15/15 · 15/15 | 15·15 / 15·15 / 15·15 | MET | 15·15 / 15·15 / 15·15 | MET |
+| 2. Same answers | 229/229 | 229 / 200 / 150 | MISSED | 229 / 229 / 229 | **MET** |
+| 3. Warm latency | median ≤ 250 ms | 162.2 / 239.5 / 148.4 ms | MET | 173.4 / 266.4 / 166.3 ms | **MISSED** |
+| 4. 50-post batch | ≤ 30,000 ms | 43,651.5 / 44,114.2 / 43,763.6 | MISSED | 43,731.1 / 44,479.5 / 45,422.3 | MISSED |
+| 5. Memory | ≤ 480 MiB | 473.2 / 440.6 / 470.0 (max) | MET | 444.5 / 444.6 / 501.2 (max) | **MISSED** |
+| Restarts mid-trial | — | 0 / 1 / 1 | | 0 / 0 / 0 | |
+
+**Real output, after.** Run 3's server log (`server.py`, `_finish()`): the
+five C2 batches that used to kill the instance, then the C4 batch, with no
+new `startup` in between:
+
+```jsonl
+{"ts": "2026-11-16T05:22:30.686+00:00", "run_id": null, "event": "startup", "model": "takemeter_onnx", "backend": "onnx", "runtime": "onnxruntime 1.32.0", "labels": ["analysis", "hot_take", "reaction"], "model_load_ms": 9301.1, "rss_mib": 467.6, "peak_rss_mib": 466.8, "python": "3.13.1"}
+{"ts": "2026-11-16T05:23:36.688+00:00", "run_id": "4bcf1d97", "event": "request", "path": "/classify", "status_code": 200, "latency_ms": 16604.8, "n_posts": 50, "error": null, "rss_mib": 482.7, "peak_rss_mib": 499.4}
+{"ts": "2026-11-16T05:23:52.883+00:00", "run_id": "9b5e2423", "event": "request", "path": "/classify", "status_code": 200, "latency_ms": 15894.9, "n_posts": 50, "error": null, "rss_mib": 498.2, "peak_rss_mib": 499.8}
+{"ts": "2026-11-16T05:24:06.885+00:00", "run_id": "ef1721f9", "event": "request", "path": "/classify", "status_code": 200, "latency_ms": 13688.0, "n_posts": 50, "error": null, "rss_mib": 488.0, "peak_rss_mib": 499.8}
+{"ts": "2026-11-16T05:24:24.783+00:00", "run_id": "19fac8b9", "event": "request", "path": "/classify", "status_code": 200, "latency_ms": 17575.6, "n_posts": 50, "error": null, "rss_mib": 495.3, "peak_rss_mib": 500.4}
+{"ts": "2026-11-16T05:24:33.778+00:00", "run_id": "61bb6151", "event": "request", "path": "/classify", "status_code": 200, "latency_ms": 8644.3, "n_posts": 29, "error": null, "rss_mib": 495.3, "peak_rss_mib": 500.4}
+{"ts": "2026-11-16T05:25:23.887+00:00", "run_id": "30b74b2c", "event": "request", "path": "/classify", "status_code": 200, "latency_ms": 45422.3, "n_posts": 50, "error": null, "rss_mib": 496.4, "peak_rss_mib": 501.2}
+```
+
+`run_criteria.py` console output for the three runs (`main()`):
+
+```
+trial 1 (after)  C2 same answers labels 229/229  truncated 229/229  (8 over 128)
+trial 2 (after)  C2 same answers labels 229/229  truncated 229/229  (8 over 128)
+trial 3 (after)  C2 same answers labels 229/229  truncated 229/229  (8 over 128)
+trial 2 (after)  C3 warm latency median server 266.4 ms  max round trip 504.7 ms
+trial 3 (after)  C5 memory       startup peak 466.8 MiB  after batch 501.2 MiB
+```
+
+**Did It Help**
+
+**It fixed what it was aimed at, and it cost memory I didn't have to
+spare.**
+
+- **Criterion 2: fixed.** 229/229 on all three runs, against 229 / 200 / 150
+  before, with **zero restarts in three runs** against two in three before.
+  The same five back-to-back batches that triggered Render's 5-second
+  health-check failure now go through, because `/health` answers in under
+  0.2 s during a batch instead of not at all. That was the prediction, and it
+  held.
+- **Criterion 4: unchanged, as predicted.** 43.7–45.4 s against 43.7–44.1 s.
+  The fix moved the work, it didn't make it smaller. Run 3's 45.4 s is the
+  slowest batch I've recorded, which fits the risk I wrote down: the health
+  thread and the model thread now share a fraction of one CPU.
+- **Criterion 5: broken by the fix. This is the trade.** On the two
+  low-memory boots, settled memory went from ~371–374 MiB before to
+  ~396–401 MiB after. On a high-memory boot (startup ~467 MiB in both cases),
+  the first 50-post batch added **5 MiB before the fix** (before run 1:
+  471.1 peak) and **33 MiB after** (after run 3: 499.4 peak), ending at
+  **501.2 MiB, 11 MiB from Render's kill line**. Running the model in a
+  worker thread costs about 25–33 MiB. My best explanation is that glibc's
+  allocator gives each new thread its own memory pool, so the worker's
+  allocations don't reuse what the main thread freed. That's an inference I
+  haven't verified on Render. What I *have* measured is the size of the jump
+  and that the fix is the only difference between the two runs. So the fix
+  turned the crash I could see (health-check timeout) into one I'm closer to
+  (out of memory on an unlucky boot).
+- **Criterion 3: missed on one run, and I don't think the fix caused it.**
+  Run 2's ten posts were all slow (218.8–303.0 ms, median 266.4). But
+  `latency_ms` is timed inside the worker thread around the model call
+  alone, so the thread hand-off isn't in it, and runs 1 and 3 were normal
+  (173.4 and 166.3). Before the fix, run 2 had already come within 10.5 ms of
+  the target (239.5). I read it as Render's shared CPU, and the target
+  had too little margin for that noise. But the rule is that it has to hold
+  on all three runs, and it didn't, so it's **MISSED**.
+
+**Net:** three MET before (1, 3, 5) and two MET after (1, 2). By count it
+went down. By what matters, I'd still keep the fix: a
+service that restarts itself under the load my API advertises is worse than
+one that's 11 MiB from a limit. But criterion 5 is now the most urgent
+problem, and the fix created it. The next change would be `MALLOC_ARENA_MAX=2`
+in `render.yaml`, which caps glibc's per-thread pools, measured the same
+way. That's a second improvement, and this milestone allows one.
