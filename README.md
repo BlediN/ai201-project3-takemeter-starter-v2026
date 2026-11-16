@@ -801,9 +801,14 @@ truncated flag, status, milliseconds). The only change to the notebook is a
 - **Actually reading long posts in full** (splitting them into chunks and
   combining the predictions). That's a new capability (shape C), not failure
   handling. This unit only makes the truncation visible.
-- **Hosting it or putting a web API or UI around it.** The model loads
-  locally and is over the 512 MB free tier once PyTorch is counted, so this
-  is Path B: one documented local command plus a committed run log.
+- **Anything around the service beyond one text box and a JSON endpoint.**
+  No accounts, no database, no saved history and no paid instance.
+
+  *Changed in Milestone 3 (2026-11-15):* this bullet originally said hosting
+  was out of scope and named Path B, because the PyTorch model is over the
+  512 MB free tier. I switched to Path A on Render. The hosted server runs
+  the same weights exported to ONNX, which fits (see **Run Path**). The
+  local `classify.py` path still works.
 
 **Size Check**
 
@@ -812,3 +817,140 @@ writing the loading code, 45 for the input checks, CSV handling and error
 exits, and 20 for the logger. Anything beyond those failure paths (an
 "uncertain" label for low-confidence posts, retries, a config file) waits
 until the criteria and tests are done.
+
+**Run Path**
+
+Path A, hosted: **https://takemeter.onrender.com** (Render, free web service,
+512 MiB, shared CPU, sleeps after ~15 idle minutes). Config is
+[`render.yaml`](render.yaml). The build runs `pip install -r
+requirements-server.txt && python fetch_model.py`, and the start command is
+`uvicorn server:app --host 0.0.0.0 --port $PORT`. Full steps are in
+[RUNNING.md](RUNNING.md).
+
+The server can't run PyTorch. Serving the PyTorch model peaked at 613 MB on
+my laptop, over the free tier's limit. So `server.py` runs the same weights
+exported to ONNX (`export_onnx.py`) through `onnxruntime`, with no torch
+installed. On the 35 test posts the ONNX and PyTorch models give the same
+label every time, and their probabilities differ by at most 3×10⁻⁷. The
+268 MB `model.onnx` is a GitHub Release asset that the build downloads and
+checks against a committed SHA-256.
+
+The memory margin is thin, and it varies from boot to boot. On the first
+boot the process sat at **~471 MiB of 512**. After it slept and woke 20
+minutes later, it peaked at 438.8 MiB and settled at ~369 MiB (`peak_rss_mb`
+and `rss_mb` in the log below). Both are higher than the 362 MB I measured on
+Windows. A full 50-post batch of long posts didn't raise memory (471.2 →
+471.4 MiB), so the risk is at startup, not per request.
+
+**Instrumentation**
+
+Every event is one JSON line. It goes to stdout (Render's Logs tab) and to
+`logs/server_log.jsonl`, which `GET /logs` serves. There are four kinds:
+`startup` (model load time, memory), `fatal` (model didn't load), `post` (one
+per post: input, status, label, confidence, tokens, `truncated`, reason,
+`latency_ms`), and `request` (one per call: path, status code, latency,
+error, memory). Field definitions are in RUNNING.md.
+
+These entries are copied from `https://takemeter.onrender.com/logs` on
+2026-11-16 (UTC), the same session they were produced, because the free
+instance wipes its disk when it sleeps. In order: the startup record, a warm
+request, two more single posts, one post over the 128-token limit
+(`truncated: true`), a 5-post batch where 4 posts are rejected, and three
+failed requests: not JSON (400), wrong key (400), and 51 posts (413).
+
+```jsonl
+{"ts": "2026-11-16T03:22:09.284+00:00", "run_id": null, "event": "startup", "model": "takemeter_onnx", "backend": "onnx", "runtime": "onnxruntime 1.32.0", "labels": ["analysis", "hot_take", "reaction"], "model_load_ms": 5309.6, "rss_mb": 489.9, "peak_rss_mb": 466.7, "python": "3.13.1"}
+{"ts": "2026-11-16T03:26:09.785+00:00", "run_id": "3ae106bc", "event": "post", "source": "http", "row": 1, "latency_ms": 136.9, "input": "Jokic averaged 29.6 points, 12.7 rebounds and 10.2 assists last season on 58 percent shooting. That is not a hot take, that is the box score.", "status": "ok", "label": "analysis", "confidence": 0.7772, "tokens": 39, "truncated": false, "reason": null, "input_chars": 141}
+{"ts": "2026-11-16T03:26:09.785+00:00", "run_id": "3ae106bc", "event": "request", "path": "/classify", "status_code": 200, "latency_ms": 137.3, "n_posts": 1, "error": null, "rss_mb": 494.8, "peak_rss_mb": 471.2}
+{"ts": "2026-11-16T03:26:24.281+00:00", "run_id": "4ace2f0a", "event": "post", "source": "http", "row": 1, "latency_ms": 41.4, "input": "LeBron is washed. He will never win another ring, book it.", "status": "ok", "label": "hot_take", "confidence": 0.5623, "tokens": 17, "truncated": false, "reason": null, "input_chars": 58}
+{"ts": "2026-11-16T03:26:24.282+00:00", "run_id": "4ace2f0a", "event": "request", "path": "/classify", "status_code": 200, "latency_ms": 41.8, "n_posts": 1, "error": null, "rss_mb": 494.8, "peak_rss_mb": 471.2}
+{"ts": "2026-11-16T03:26:24.579+00:00", "run_id": "3fcc0e11", "event": "post", "source": "http", "row": 1, "latency_ms": 60.2, "input": "WEMBY JUST BLOCKED THAT INTO THE THIRD ROW I AM SCREAMING", "status": "ok", "label": "reaction", "confidence": 0.6162, "tokens": 15, "truncated": false, "reason": null, "input_chars": 57}
+{"ts": "2026-11-16T03:26:24.580+00:00", "run_id": "3fcc0e11", "event": "request", "path": "/classify", "status_code": 200, "latency_ms": 60.5, "n_posts": 1, "error": null, "rss_mb": 494.8, "peak_rss_mb": 471.2}
+{"ts": "2026-11-16T03:26:25.977+00:00", "run_id": "06f8c7e2", "event": "post", "source": "http", "row": 1, "latency_ms": 758.0, "input": "Jokic averaged 29.6 points on 58 percent shooting last season and led the league in assists per game. Jokic averaged 29.6 points on 58 percent shooting last season and led the league in assists per game. Jokic averaged 29.6 points on 58 percent shooting last season and led the league in assists per game. Jokic averaged 29.6 points on 58 percent shooting last season and led the league in assists per game. Jokic averaged 29.6 points on 58 percent shooting last season and led the league in assists per game. Jokic averaged 29.6 points on 58 percent shooting last season and led the league in assists per game. Jokic averaged 29.6 points on 58 percent shooting last season and led the league in assists per game. Jokic averaged 29.6 points on 58 percent shooting last season and led the league in assists per game. Jokic averaged 29.6 points on 58 percent shooting last season and led the league in assists per game. Jokic averaged 29.6 points on 58 percent shooting last season and led the league in assists per game. ", "status": "ok", "label": "analysis", "confidence": 0.8102, "tokens": 222, "truncated": true, "reason": null, "input_chars": 1020}
+{"ts": "2026-11-16T03:26:25.977+00:00", "run_id": "06f8c7e2", "event": "request", "path": "/classify", "status_code": 200, "latency_ms": 758.3, "n_posts": 1, "error": null, "rss_mb": 494.8, "peak_rss_mb": 471.2}
+{"ts": "2026-11-16T03:26:26.211+00:00", "run_id": "f0ce3e92", "event": "post", "source": "http", "row": 1, "latency_ms": 11.1, "input": "Knicks in 6", "status": "ok", "label": "reaction", "confidence": 0.4429, "tokens": 5, "truncated": false, "reason": null, "input_chars": 11}
+{"ts": "2026-11-16T03:26:26.211+00:00", "run_id": "f0ce3e92", "event": "post", "source": "http", "row": 2, "latency_ms": 0.0, "input": "", "status": "rejected", "label": null, "confidence": null, "tokens": null, "truncated": null, "reason": "empty", "input_chars": 0}
+{"ts": "2026-11-16T03:26:26.211+00:00", "run_id": "f0ce3e92", "event": "post", "source": "http", "row": 3, "latency_ms": 0.0, "input": "??????", "status": "rejected", "label": null, "confidence": null, "tokens": null, "truncated": null, "reason": "no_words", "input_chars": 6}
+{"ts": "2026-11-16T03:26:26.211+00:00", "run_id": "f0ce3e92", "event": "post", "source": "http", "row": 4, "latency_ms": 0.0, "input": "https://streamable.com/abc123", "status": "rejected", "label": null, "confidence": null, "tokens": null, "truncated": null, "reason": "link_only", "input_chars": 29}
+{"ts": "2026-11-16T03:26:26.211+00:00", "run_id": "f0ce3e92", "event": "post", "source": "http", "row": 5, "latency_ms": 0.0, "input": "42", "status": "rejected", "label": null, "confidence": null, "tokens": null, "truncated": null, "reason": "not_text (int)", "input_chars": 2}
+{"ts": "2026-11-16T03:26:26.211+00:00", "run_id": "f0ce3e92", "event": "request", "path": "/classify", "status_code": 200, "latency_ms": 11.7, "n_posts": 5, "error": null, "rss_mb": 494.8, "peak_rss_mb": 471.2}
+{"ts": "2026-11-16T03:26:26.430+00:00", "run_id": "86fa9d8c", "event": "request", "path": "/classify", "status_code": 400, "latency_ms": 0.2, "n_posts": 0, "error": "body is not JSON. Send {\"text\": \"...\"} or {\"posts\": [...]}", "rss_mb": 494.8, "peak_rss_mb": 471.2}
+{"ts": "2026-11-16T03:26:26.635+00:00", "run_id": "fe3d981f", "event": "request", "path": "/classify", "status_code": 400, "latency_ms": 0.2, "n_posts": 0, "error": "expected {\"text\": \"...\"} or {\"posts\": [\"...\", ...]}", "rss_mb": 494.8, "peak_rss_mb": 471.2}
+{"ts": "2026-11-16T03:26:26.904+00:00", "run_id": "0f8865cc", "event": "request", "path": "/classify", "status_code": 413, "latency_ms": 0.2, "n_posts": 0, "error": "51 posts; the limit is 50 per request", "rss_mb": 494.8, "peak_rss_mb": 471.2}
+```
+
+What the entries show, and what was wrong with them:
+
+- **Failures leave records.** Every rejected post has a `post` record with
+  `status: "rejected"` and a `reason`. Every failed request has a `request`
+  record with its `status_code` and `error`, and there are three of them
+  above. I also tested a server with no model locally: it writes a `fatal`
+  record and answers `503`. That didn't happen on Render, so there's no
+  hosted `fatal` record.
+- **The memory fields used two different units.** That's a bug I found by
+  reading these logs. `rss_mb` was in MB (10⁶ bytes) and `peak_rss_mb` in
+  MiB (2²⁰ bytes), which is why "now" (494.8) looks bigger than "peak"
+  (471.2). They're the same number: 494.8 MB = 471.9 MiB. I fixed it in
+  `server.py` (both are now `rss_mib` / `peak_rss_mib`). The entries above are
+  from before the fix and are left as they were logged.
+- **The disk wipe is real.** After 17 idle minutes, `/logs` held only 23
+  records, starting with a new `startup` at 03:45:44. Everything from the
+  first session was gone, and the copy above is the only one left. These
+  four records are from that second session: the wake-up `startup`, the
+  cold request (the post plus its `request` record, 223.9 ms of model time
+  inside a 32.6 s wait), and the last request of the run:
+
+```jsonl
+{"ts": "2026-11-16T03:45:44.838+00:00", "run_id": null, "event": "startup", "model": "takemeter_onnx", "backend": "onnx", "runtime": "onnxruntime 1.32.0", "labels": ["analysis", "hot_take", "reaction"], "model_load_ms": 8294.5, "rss_mb": 382.0, "peak_rss_mb": 438.8, "python": "3.13.1"}
+{"ts": "2026-11-16T03:45:51.950+00:00", "run_id": "be7d5280", "event": "post", "source": "http", "row": 1, "latency_ms": 223.9, "input": "Jokic averaged 29.6 points, 12.7 rebounds and 10.2 assists last season on 58 percent shooting. That is not a hot take, that is the box score.", "status": "ok", "label": "analysis", "confidence": 0.7772, "tokens": 39, "truncated": false, "reason": null, "input_chars": 141}
+{"ts": "2026-11-16T03:45:52.033+00:00", "run_id": "be7d5280", "event": "request", "path": "/classify", "status_code": 200, "latency_ms": 307.0, "n_posts": 1, "error": null, "rss_mb": 387.1, "peak_rss_mb": 438.8}
+{"ts": "2026-11-16T03:45:55.645+00:00", "run_id": "26053ccb", "event": "request", "path": "/classify", "status_code": 200, "latency_ms": 167.8, "n_posts": 1, "error": null, "rss_mb": 387.1, "peak_rss_mb": 438.8}
+```
+
+- **The `??????` input in the batch is my client, not the server.** I sent
+  `🔥🔥🔥` from a Windows Git Bash command line, which turned the emoji into
+  `?` before they left my machine. The server still rejected the post
+  correctly (`no_words`).
+
+**What It Costs**
+
+There's no API and no per-call fee, and the Render free tier is **$0**. The
+real cost is **compute time per post**, so that's what I measured.
+
+*Method:* I ran `python measure_cost.py https://takemeter.onrender.com
+--runs 10` from my laptop. It sends one untimed warm-up request, then 10
+requests with the same 141-character, 39-token post. For each one it records
+the server's own `latency_ms` (from the `post` log record: input checks +
+tokenizing + the ONNX forward pass) and the round-trip time seen from my
+machine.
+
+| Run | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | **Mean** |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Server `latency_ms` | 158.0 | 128.4 | 132.4 | 131.9 | 160.1 | 157.8 | 244.9 | 140.3 | 148.6 | 211.7 | **161.4** |
+| Round trip, ms | 488.8 | 296.1 | 301.8 | 300.3 | 518.5 | 576.1 | 393.1 | 314.5 | 294.0 | 398.0 | **388.1** |
+
+I ran the same 10-run measurement a second time, after the cold start
+(03:45 UTC, a fresh instance):
+
+| Run | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | **Mean** |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Server `latency_ms` | 200.0 | 141.4 | 198.5 | 131.0 | 228.1 | 209.5 | 161.0 | 133.4 | 147.1 | 167.5 | **171.8** |
+| Round trip, ms | 515.3 | 296.5 | 512.4 | 285.5 | 389.0 | 404.1 | 308.9 | 299.0 | 298.2 | 299.5 | **360.8** |
+
+**One warm run costs about 0.16–0.17 s of server compute** (means 161.4 and
+171.8 ms across two sets of 10; range 128–245 ms), and about 0.36–0.39 s end
+to end for whoever is calling it. That's
+about 3× slower than the same code on my laptop (48.9 ms mean, same script
+against a local server), which matches Render's free tier giving a fraction
+of one CPU.
+
+Other costs the log shows:
+
+| Cost | Measured | Source |
+|---|---|---|
+| Startup (load the ONNX model) | 5.3 s | `model_load_ms: 5309.6` in the `startup` record |
+| Cold start (first request after the instance sleeps) | 32.6 s round trip | `measure_cost.py` warm-up at 03:45:19 UTC, after 17 idle minutes. Of that, 8.3 s was loading the model (`model_load_ms: 8294.5`) and 0.22 s was the post. The rest is Render waking the instance and starting Python |
+| A post over 128 tokens | 758 ms | `latency_ms` of the truncated post above. Over 4× a short post: the model reads the full 128 tokens instead of 39, and the tokenizer still processes all 222 |
+| A full 50-post batch of long posts | 42.9 s (~860 ms per post) | `request` record `66b8f40d`, `latency_ms: 42941.2` |
+| A rejected post | 0.0 ms | rejected before the model runs |
+| Memory | 439–471 MiB peak of 512, depending on the boot | `peak_rss_mb` in the `startup` and `request` records |

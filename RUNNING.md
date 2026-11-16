@@ -16,7 +16,7 @@ locally** below).
 
 | | |
 |---|---|
-| **URL** | `https://<FILL IN>.onrender.com` (set after the first deploy) |
+| **URL** | **https://takemeter.onrender.com** (deployed 2026-11-16) |
 | **Platform** | Render, free web service (512 MB memory, shared CPU, sleeps after ~15 min idle) |
 | **Config** | [`render.yaml`](render.yaml) (Render Blueprint) |
 | **Build command** | `pip install -r requirements-server.txt && python fetch_model.py` |
@@ -34,7 +34,7 @@ locally** below).
 | `GET /docs` | Auto-generated API docs |
 
 ```bash
-curl -X POST https://<FILL IN>.onrender.com/classify \
+curl -X POST https://takemeter.onrender.com/classify \
      -H "Content-Type: application/json" \
      -d '{"text": "Tatum shot 4/19 in the last 3 games, he is in a real slump"}'
 ```
@@ -105,7 +105,7 @@ Then click **Apply**. The build installs `requirements-server.txt` (no torch)
 and runs `fetch_model.py`, which downloads and checksums the model. Then
 Render starts uvicorn and polls `/health`.
 
-**4. Check it.** Open `https://<service>.onrender.com/health`. It should say
+**4. Check it.** Open `https://takemeter.onrender.com/health`. It should say
 `"status": "ok"` and `"backend": "onnx"`. Every push to `main` redeploys.
 
 ### What the server needs
@@ -126,10 +126,10 @@ serves.
 
 | `event` | When | Fields |
 |---|---|---|
-| `startup` | The model loaded | `model_load_ms`, `backend`, `runtime`, `labels`, `rss_mb`, `peak_rss_mb`, `python` |
-| `fatal` | The model didn't load (the server stays up and answers `503`) | `error`, `rss_mb`, `peak_rss_mb` |
+| `startup` | The model loaded | `model_load_ms`, `backend`, `runtime`, `labels`, `rss_mib`, `peak_rss_mib`, `python` |
+| `fatal` | The model didn't load (the server stays up and answers `503`) | `error`, `rss_mib`, `peak_rss_mib` |
 | `post` | Each post in a request | `ts`, `run_id` (= request id), `input` (first 2,000 chars), `input_chars`, `status` (`ok`/`rejected`/`error`), `label`, `confidence`, `tokens`, `truncated`, `reason`, `latency_ms` |
-| `request` | Each `/classify` call, plus any failed `/health` | `path`, `status_code`, `latency_ms`, `n_posts`, `error`, `rss_mb`, `peak_rss_mb` |
+| `request` | Each `/classify` call, plus any failed `/health` | `path`, `status_code`, `latency_ms`, `n_posts`, `error`, `rss_mib`, `peak_rss_mib` |
 
 Bad requests leave a record too: not JSON (`400`), wrong shape (`400`), over
 50 posts or over 1 MB (`413`), and no model (`503`).
@@ -141,7 +141,7 @@ the same session**. The copy in the repo is the one that lasts.
 ### Measuring cost
 
 ```bash
-python measure_cost.py https://<service>.onrender.com --runs 10
+python measure_cost.py https://takemeter.onrender.com --runs 10
 ```
 
 The script sends one warm-up request (that's the cold-start time if the
@@ -155,7 +155,7 @@ uses only the standard library.
 |---|---|
 | Build fails at `fetch_model.py` with `HTTP 404` | `MODEL_URL` is wrong, or the repo/release is private |
 | Build fails with `checksum mismatch` | The uploaded `model.onnx` isn't the one `model.onnx.sha256` describes. Re-export and re-upload, or commit the matching checksum |
-| Deploy fails, "Out of memory (used over 512Mi)" in Events | The model didn't fit. Check `peak_rss_mb` in the last `startup` record |
+| Deploy fails, "Out of memory (used over 512Mi)" in Events | The model didn't fit. Check `peak_rss_mib` in the last `startup` record |
 | `/health` returns `503` | The model didn't load. The `error` field says why |
 | First request takes about a minute | The instance was asleep. Expected on the free tier |
 | `/logs` is empty | The instance restarted and wiped its disk. Use Render's Logs tab |

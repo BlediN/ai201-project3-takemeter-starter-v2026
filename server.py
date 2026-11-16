@@ -52,13 +52,16 @@ MAX_BODY_BYTES = 1_000_000
 
 # ── Memory ───────────────────────────────────────────────────────────────────
 
-def memory_mb():
-    """(current, peak) resident memory in MB. Linux only; (None, None) elsewhere."""
+def memory_mib():
+    """
+    (current, peak) resident memory in MiB, the unit of Render's "512Mi" limit.
+    Linux only; (None, None) elsewhere.
+    """
     try:
         import resource
-        peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024  # KB on Linux
+        peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024  # KiB on Linux
         with open("/proc/self/statm") as f:
-            current = int(f.read().split()[1]) * os.sysconf("SC_PAGE_SIZE") / 1e6
+            current = int(f.read().split()[1]) * os.sysconf("SC_PAGE_SIZE") / 2**20
         return round(current, 1), round(peak, 1)
     except (ImportError, OSError, ValueError, AttributeError):
         return None, None
@@ -111,15 +114,15 @@ STARTED = time.time()
 _t = time.perf_counter()
 try:
     MODEL = classify.load_model(MODEL_DIR)
-    rss, peak = memory_mb()
+    rss, peak = memory_mib()
     log.write("startup", model=MODEL_DIR, backend=MODEL["backend"],
               runtime=MODEL["runtime"], labels=MODEL["labels"],
               model_load_ms=round((time.perf_counter() - _t) * 1000, 1),
-              rss_mb=rss, peak_rss_mb=peak, python=platform.python_version())
+              rss_mib=rss, peak_rss_mib=peak, python=platform.python_version())
 except classify.FatalError as e:
     MODEL_ERROR = str(e)
-    rss, peak = memory_mb()
-    log.write("fatal", model=MODEL_DIR, error=MODEL_ERROR, rss_mb=rss, peak_rss_mb=peak)
+    rss, peak = memory_mib()
+    log.write("fatal", model=MODEL_DIR, error=MODEL_ERROR, rss_mib=rss, peak_rss_mib=peak)
 
 
 app = FastAPI(title="TakeMeter", docs_url="/docs", redoc_url=None)
@@ -127,10 +130,10 @@ app = FastAPI(title="TakeMeter", docs_url="/docs", redoc_url=None)
 
 def _finish(request_id, path, status, t0, payload, n_posts=0, error=None):
     """Write the per-request record and return the response."""
-    rss, peak = memory_mb()
+    rss, peak = memory_mib()
     log.write("request", run_id=request_id, path=path, status_code=status,
               latency_ms=round((time.perf_counter() - t0) * 1000, 1),
-              n_posts=n_posts, error=error, rss_mb=rss, peak_rss_mb=peak)
+              n_posts=n_posts, error=error, rss_mib=rss, peak_rss_mib=peak)
     if isinstance(payload, dict):
         payload["request_id"] = request_id
     return JSONResponse(payload, status_code=status)
@@ -191,11 +194,11 @@ async def classify_endpoint(request: Request):
 @app.get("/health")
 def health():
     t0 = time.perf_counter()
-    rss, peak = memory_mb()
+    rss, peak = memory_mib()
     body = {"status": "ok" if MODEL else "model_unavailable",
             "uptime_s": round(time.time() - STARTED, 1),
             "backend": MODEL["backend"] if MODEL else None,
-            "rss_mb": rss, "peak_rss_mb": peak}
+            "rss_mib": rss, "peak_rss_mib": peak}
     if MODEL is None:
         body["error"] = MODEL_ERROR
         return _finish(uuid.uuid4().hex[:8], "/health", 503, t0, body, error=MODEL_ERROR)
