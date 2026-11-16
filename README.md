@@ -792,6 +792,11 @@ structured log record (timestamp, input, label or error, confidence,
 truncated flag, status, milliseconds). The only change to the notebook is a
 `save_pretrained` call so a trained model exists for `classify.py` to load.
 
+*Added in Milestone 3:* the same failure handling also runs as a hosted web
+service (`server.py` on Render, Path A). It uses the same `check_post()` and
+`run_post()`, so a post rejected on the command line is rejected at the URL
+for the same reason. See **Run Path**.
+
 **Out of Scope**
 
 - **Making the model more accurate.** No relabelling, no new data, no more
@@ -954,6 +959,41 @@ Other costs the log shows:
 | A full 50-post batch of long posts | 42.9 s (~860 ms per post) | `request` record `66b8f40d`, `latency_ms: 42941.2` |
 | A rejected post | 0.0 ms | rejected before the model runs |
 | Memory | 439–471 MiB peak of 512, depending on the boot | `peak_rss_mb` in the `startup` and `request` records |
+
+*Cross-check from the test runs.* Criterion 3 sent the same post 10 times in
+each of the six trials (three before the fix, three after). Those 60 server
+timings average **197.4 ms** (median 173.8 ms), a bit higher than the 166.6 ms
+mean of the two `measure_cost.py` sets, because they include after-run 2's
+slow stretch (median 266.4 ms). For the arithmetic below I use **0.2 s per
+post**, rounded up from the larger number.
+
+*What a hundred people a day would cost.* I assume each person pastes 10
+comments a day (my guess at usage, not a measurement):
+
+```
+posts per day      100 people × 10 posts            = 1,000 posts
+compute per day    1,000 posts × 0.2 s              = 200 s  (3.3 minutes)
+share of the day   200 s ÷ 86,400 s                 = 0.23% busy
+```
+
+```
+Free tier          $0. One always-awake service is 24 h × 31 days = 744 h,
+                   under the 750 free instance-hours a month. It still
+                   sleeps after 15 idle minutes, so anyone arriving after a
+                   quiet spell waits ~32.6 s (measured cold start).
+Starter ($7/mo)    $7 ÷ 30 days = $0.23 a day;  $0.23 ÷ 1,000 posts
+                   = $0.00023 per post. Always on, so no cold starts.
+```
+
+So **100 people a day costs about 3.3 minutes of compute. That's $0 on the
+free tier, or about $0.23 a day ($0.00023 a post) on Render's $7/month
+Starter plan.** Either way the cost is the instance being up, not the posts:
+it's idle 99.8% of the day. The $7 is Render's list price (render.com/pricing,
+checked 2026-11-16), not something I measured. Starter has the same 512 MB as
+the free tier, so it would fix cold starts but not criterion 5's memory
+problem. That would take Render's $25/month Standard plan (2 GB), which is
+$0.83 a day.
+
 
 **Run Log — Before**
 
@@ -1309,3 +1349,107 @@ one that's 11 MiB from a limit. But criterion 5 is now the most urgent
 problem, and the fix created it. The next change would be `MALLOC_ARENA_MAX=2`
 in `render.yaml`, which caps glibc's per-thread pools, measured the same
 way. That's a second improvement, and this milestone allows one.
+
+**What's Still Broken**
+
+Three criteria are missed after the fix. Criteria 1 and 2 are met.
+
+*Criterion 5: memory (501.2 MiB on one boot, target ≤ 480).*
+- **What I'd do:** set `MALLOC_ARENA_MAX=2` as an environment variable in
+  `render.yaml`. That caps how many separate memory pools glibc gives
+  threads, which is the most likely source of the extra ~30 MiB the worker
+  thread brought. Then I'd re-run all five criteria three times, the same
+  way, and check that criterion 2 still holds. If the number didn't come
+  down, the next suspect is onnxruntime's own buffers in the new thread, and
+  I'd log `rss_mib` before and after a single post to see which allocation
+  grows.
+- **Why I stopped:** this milestone allows one improvement, and I spent it
+  on the crash. A second change needs three more restarts and three more
+  full trials, so it would be a second "after" set, not part of this one.
+
+*Criterion 4: the 50-post batch (43.7–45.4 s, target ≤ 30 s).*
+- **What I'd do:** run each request's posts through the model **together**,
+  padded into one ONNX call (or chunks of about 10), not one call per post.
+  One batched call usually costs less per post on a CPU than 50 single calls.
+  That's what the target needs: ≤ 600 ms per long post, against ~875 now.
+  I'd keep the worker thread so `/health` stays responsive.
+- **Why I stopped:** it's a second change. It also pulls against criterion
+  5: a padded batch holds all its activations in memory at once, and I'm
+  already 11 MiB from the limit on a bad boot. So it has to come after the
+  memory fix, not before. I'm not willing to make the API promise smaller (a
+  30-post limit would pass at ~26 s), because that changes the target rather
+  than meeting it.
+
+*Criterion 3: warm latency (one run at a 266.4 ms median, target ≤ 250).*
+- **What I'd do:** find out whether it's noise before trying to fix it. I'd
+  run criterion 3 on its own, about 20 times, spread across a day, and
+  record the CPU time the process actually got (from `/proc/self/stat`)
+  next to each `latency_ms`. If slow runs line up with less CPU time, it's
+  Render's shared CPU, and the honest answer is that a 250 ms median on a
+  0.1-CPU instance has too little margin. That would mean a paid instance
+  rather than a code change. If they don't line up, the worker thread is a
+  suspect.
+- **Why I stopped:** I can't tell noise from a regression in three trials,
+  and getting enough trials is hours of waiting between restarts, not a
+  change I can make and measure in this unit.
+
+**What I'd Do Next**
+
+If this were real and I had another unit, the first thing I'd do is the
+`MALLOC_ARENA_MAX=2` change and its three-trial re-run. Memory is the only
+one of my misses that can take the whole URL down for everyone (Render kills
+the instance at 512 MiB), my own fix is what pushed it to 501 MiB, and
+criterion 4's batching fix can't safely go in until there's memory to spare.
+
+**How I Used AI**
+
+I used Claude Code (an AI coding agent in VS Code) for nearly all of the
+capstone, as a pair working inside my repo. I made the decisions and did
+everything in accounts that are mine. The AI wrote most of the code and most
+of the first drafts of these sections.
+
+*What I decided or did myself:*
+- Picked TakeMeter and shape B.
+- Switched to Path A (Render) in Milestone 3. When the AI measured that
+  PyTorch wouldn't fit in 512 MB and laid out four options, I chose the ONNX
+  route.
+- Uploaded the model as a GitHub Release.
+- Created the Render service, filled in `MODEL_URL`, and did every restart
+  between trials.
+- Copied the Render Events text that confirmed the health-check diagnosis.
+- Made every commit.
+
+*What the AI did:*
+- Wrote `classify.py`, `server.py`, `export_onnx.py`, `fetch_model.py`,
+  `measure_cost.py`, `run_criteria.py`, `render.yaml`, the notebook's
+  save-model cell and the RUNNING.md sections.
+- Ran every local test, every trial and every measurement against the URL.
+- Drafted the README sections and **the five criteria in `criteria.md`**.
+  Milestone 4 asked for criteria written unaided. They weren't: the AI wrote
+  them from the Milestone 3 measurements, and I reviewed and committed them
+  before any trial ran.
+
+*Where it was wrong, and how that was caught.* All of these are in the
+history above:
+- **The memory fields used two units** (`rss_mb` in MB, `peak_rss_mb` in
+  MiB). It found this by reading its own hosted logs and fixed it.
+- **It estimated memory from Windows** (362 MB), and Render turned out to be
+  ~470 MiB. The Linux number only showed up once the service was hosted.
+- **It blamed a health-check failure for the first mid-trial outage. I had
+  actually restarted the service myself.** I told it, it threw out those runs
+  (kept as `*_INTERRUPTED*.json`), and the real cause was confirmed later
+  from Render's Events tab on a run I didn't touch.
+- **Its first test script lost the server log when the instance restarted,
+  and let one crash fail every later criterion.** It rewrote the script
+  (`*_HARNESSv1.json` is the run it threw out), and then its "outage" check
+  reported false alarms until it fixed that too.
+- **It wrote a few claims that didn't check out**, and it corrected them
+  before commit: "471 MiB plus the swing would be over 512" (it's 503),
+  "even though the model only reads 128 tokens", and a garbled before/after
+  count.
+- **Its local test of a memory-leak theory came back negative**, and it said
+  so instead of keeping the theory.
+
+*What I'd do differently:* write the criteria myself first and only then
+ask the AI to check whether they could be measured. Reading its drafts
+anchored me on its numbers.

@@ -115,7 +115,7 @@ Render starts uvicorn and polls `/health`.
 | Python | 3.13 (`PYTHON_VERSION` in `render.yaml`; tested locally on 3.13.16) |
 | Packages | [`requirements-server.txt`](requirements-server.txt), exact pins: `onnxruntime==1.32.0 tokenizers==0.22.2 numpy==2.5.4 fastapi==0.163.1 uvicorn==0.54.0`. No torch, transformers or pandas |
 | Model files | `takemeter_onnx/`: `model.onnx` 268 MB (release asset) plus tokenizer and config (~1 MB, committed) |
-| Memory | ~362 MB steady, 427 MB peak while loading (measured locally; `/health` and every `request` log record report the real numbers on Render) |
+| Memory | Measured on Render: 437–467 MiB peak at startup depending on the boot, up to 501.2 MiB after a 50-post batch since the worker-thread fix (512 MiB limit). Locally on Windows it was ~362 MB steady and 427 MB peak, which underestimates Linux. `/health` and every `request` log record report the live numbers |
 | Env vars | `MODEL_URL` (required at build), `LOGS_TOKEN` (optional), `TAKEMETER_MODEL` / `TAKEMETER_LOG` (optional overrides) |
 
 ### The log
