@@ -1,0 +1,1384 @@
+{
+  "label": "before",
+  "trial": 1,
+  "url": "https://takemeter.onrender.com",
+  "started_utc": "2026-11-16T04:10:05+00:00",
+  "health_at_start": {
+    "status": "ok",
+    "uptime_s": 86.7,
+    "backend": "onnx",
+    "rss_mib": 469.7,
+    "peak_rss_mib": 469.4
+  },
+  "targets": {
+    "c1_cases": 15,
+    "c2_posts": 229,
+    "c3_median_server_ms": 250.0,
+    "c3_max_round_trip_ms": 1000.0,
+    "c4_server_ms": 30000.0,
+    "c5_peak_mib": 480.0
+  },
+  "c1": {
+    "handled": 15,
+    "logged": 15,
+    "n": 15,
+    "met": true,
+    "cases": [
+      {
+        "id": "1",
+        "case": "body not JSON",
+        "level": "request",
+        "http_status": 400,
+        "request_id": "15aa4478",
+        "round_trip_ms": 175.3,
+        "response": {
+          "error": "body is not JSON. Send {\"text\": \"...\"} or {\"posts\": [...]}",
+          "request_id": "15aa4478"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:10:05.930+00:00",
+            "run_id": "15aa4478",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 400,
+            "latency_ms": 0.2,
+            "n_posts": 0,
+            "error": "body is not JSON. Send {\"text\": \"...\"} or {\"posts\": [...]}",
+            "rss_mib": 469.8,
+            "peak_rss_mib": 469.4
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "case": "JSON with neither text nor posts",
+        "level": "request",
+        "http_status": 400,
+        "request_id": "43835240",
+        "round_trip_ms": 151.7,
+        "response": {
+          "error": "expected {\"text\": \"...\"} or {\"posts\": [\"...\", ...]}",
+          "request_id": "43835240"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:10:06.075+00:00",
+            "run_id": "43835240",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 400,
+            "latency_ms": 0.3,
+            "n_posts": 0,
+            "error": "expected {\"text\": \"...\"} or {\"posts\": [\"...\", ...]}",
+            "rss_mib": 469.8,
+            "peak_rss_mib": 469.4
+          }
+        ]
+      },
+      {
+        "id": "3",
+        "case": "posts not a list",
+        "level": "request",
+        "http_status": 400,
+        "request_id": "c15d9f37",
+        "round_trip_ms": 190.5,
+        "response": {
+          "error": "\"posts\" must be a list",
+          "request_id": "c15d9f37"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:10:06.270+00:00",
+            "run_id": "c15d9f37",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 400,
+            "latency_ms": 0.3,
+            "n_posts": 0,
+            "error": "\"posts\" must be a list",
+            "rss_mib": 469.8,
+            "peak_rss_mib": 469.4
+          }
+        ]
+      },
+      {
+        "id": "4",
+        "case": "posts an empty list",
+        "level": "request",
+        "http_status": 400,
+        "request_id": "69baef14",
+        "round_trip_ms": 159.1,
+        "response": {
+          "error": "\"posts\" is empty",
+          "request_id": "69baef14"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:10:06.431+00:00",
+            "run_id": "69baef14",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 400,
+            "latency_ms": 0.2,
+            "n_posts": 0,
+            "error": "\"posts\" is empty",
+            "rss_mib": 469.8,
+            "peak_rss_mib": 469.4
+          }
+        ]
+      },
+      {
+        "id": "5",
+        "case": "51 posts",
+        "level": "request",
+        "http_status": 413,
+        "request_id": "07e6f61d",
+        "round_trip_ms": 149.6,
+        "response": {
+          "error": "51 posts; the limit is 50 per request",
+          "request_id": "07e6f61d"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:10:06.580+00:00",
+            "run_id": "07e6f61d",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 413,
+            "latency_ms": 0.2,
+            "n_posts": 0,
+            "error": "51 posts; the limit is 50 per request",
+            "rss_mib": 469.8,
+            "peak_rss_mib": 469.4
+          }
+        ]
+      },
+      {
+        "id": "6",
+        "case": "body over 1 MB",
+        "level": "request",
+        "http_status": 413,
+        "request_id": "a287d9e4",
+        "round_trip_ms": 654.5,
+        "response": {
+          "error": "request body over 1000000 bytes",
+          "request_id": "a287d9e4"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:10:07.234+00:00",
+            "run_id": "a287d9e4",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 413,
+            "latency_ms": 231.4,
+            "n_posts": 0,
+            "error": "request body over 1000000 bytes",
+            "rss_mib": 469.8,
+            "peak_rss_mib": 469.4
+          }
+        ]
+      },
+      {
+        "id": "7",
+        "case": "empty string",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "4702aaf2",
+        "round_trip_ms": 186.3,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "empty",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "4702aaf2"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:10:07.421+00:00",
+            "run_id": "4702aaf2",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "empty",
+            "input_chars": 0
+          },
+          {
+            "ts": "2026-11-16T04:10:07.422+00:00",
+            "run_id": "4702aaf2",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.4,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 469.8,
+            "peak_rss_mib": 469.4
+          }
+        ]
+      },
+      {
+        "id": "8",
+        "case": "whitespace only",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "db074681",
+        "round_trip_ms": 330.4,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "empty",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "db074681"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:10:07.749+00:00",
+            "run_id": "db074681",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "   \n\t",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "empty",
+            "input_chars": 5
+          },
+          {
+            "ts": "2026-11-16T04:10:07.749+00:00",
+            "run_id": "db074681",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.3,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 469.8,
+            "peak_rss_mib": 469.4
+          }
+        ]
+      },
+      {
+        "id": "9",
+        "case": "emoji only",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "731fce80",
+        "round_trip_ms": 157.0,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "no_words",
+              "latency_ms": 0.7
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "731fce80"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:10:07.905+00:00",
+            "run_id": "731fce80",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.7,
+            "input": "🔥🔥🔥",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "no_words",
+            "input_chars": 3
+          },
+          {
+            "ts": "2026-11-16T04:10:07.905+00:00",
+            "run_id": "731fce80",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 1.1,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 469.8,
+            "peak_rss_mib": 469.4
+          }
+        ]
+      },
+      {
+        "id": "10",
+        "case": "link only",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "5c77176c",
+        "round_trip_ms": 144.1,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "link_only",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "5c77176c"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:10:08.049+00:00",
+            "run_id": "5c77176c",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "https://streamable.com/abc123",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "link_only",
+            "input_chars": 29
+          },
+          {
+            "ts": "2026-11-16T04:10:08.049+00:00",
+            "run_id": "5c77176c",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.3,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 469.8,
+            "peak_rss_mib": 469.4
+          }
+        ]
+      },
+      {
+        "id": "11",
+        "case": "bare score",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "f128a07f",
+        "round_trip_ms": 151.8,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "no_words",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "f128a07f"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:10:08.201+00:00",
+            "run_id": "f128a07f",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "23-9",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "no_words",
+            "input_chars": 4
+          },
+          {
+            "ts": "2026-11-16T04:10:08.202+00:00",
+            "run_id": "f128a07f",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.3,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 469.8,
+            "peak_rss_mib": 469.4
+          }
+        ]
+      },
+      {
+        "id": "12",
+        "case": "10,001 chars of words",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "44903a56",
+        "round_trip_ms": 167.8,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "too_long (10001 chars > 10000)",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "44903a56"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:10:08.364+00:00",
+            "run_id": "44903a56",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists an",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "too_long (10001 chars > 10000)",
+            "input_chars": 10001
+          },
+          {
+            "ts": "2026-11-16T04:10:08.364+00:00",
+            "run_id": "44903a56",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 2.0,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 469.8,
+            "peak_rss_mib": 469.4
+          }
+        ]
+      },
+      {
+        "id": "13",
+        "case": "a number",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "86085d9d",
+        "round_trip_ms": 247.5,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "not_text (int)",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "86085d9d"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:10:08.618+00:00",
+            "run_id": "86085d9d",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "42",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "not_text (int)",
+            "input_chars": 2
+          },
+          {
+            "ts": "2026-11-16T04:10:08.618+00:00",
+            "run_id": "86085d9d",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.3,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 469.8,
+            "peak_rss_mib": 469.4
+          }
+        ]
+      },
+      {
+        "id": "14",
+        "case": "null",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "d0f8b1ba",
+        "round_trip_ms": 166.7,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "missing",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "d0f8b1ba"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:10:08.784+00:00",
+            "run_id": "d0f8b1ba",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "missing",
+            "input_chars": 0
+          },
+          {
+            "ts": "2026-11-16T04:10:08.784+00:00",
+            "run_id": "d0f8b1ba",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.3,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 469.8,
+            "peak_rss_mib": 469.4
+          }
+        ]
+      },
+      {
+        "id": "15",
+        "case": "zero-width spaces only",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "d444e633",
+        "round_trip_ms": 171.9,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "no_words",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "d444e633"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:10:08.958+00:00",
+            "run_id": "d444e633",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "​​",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "no_words",
+            "input_chars": 2
+          },
+          {
+            "ts": "2026-11-16T04:10:08.959+00:00",
+            "run_id": "d444e633",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.3,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 469.8,
+            "peak_rss_mib": 469.4
+          }
+        ]
+      }
+    ]
+  },
+  "c2": {
+    "same_label": 150,
+    "truncated_correct": 150,
+    "n": 229,
+    "n_over_128": 8,
+    "met": false,
+    "batch_failures": [
+      {
+        "batch_start": 150,
+        "status": 502,
+        "response": ""
+      },
+      {
+        "batch_start": 200,
+        "status": 502,
+        "response": ""
+      }
+    ],
+    "mismatches": [
+      {
+        "row": 151,
+        "text": "38% isn’t good enough if 3pt shooting is your only NBA level skill. Agree if you attempt 4 per game. Almost 8? He's in t",
+        "local_label": "analysis",
+        "local_tokens": 82,
+        "hosted": null
+      },
+      {
+        "row": 152,
+        "text": "I'm speaking more so to the Spurs \"jumped\" to 1 for Wemby and 2 for Harper, the pick at 4 is lucky for other reasons. Ma",
+        "local_label": "analysis",
+        "local_tokens": 113,
+        "hosted": null
+      },
+      {
+        "row": 153,
+        "text": "James and Embiid played 34 and 33 minutes respectively. That's absolutely fine considering we were missing two players w",
+        "local_label": "analysis",
+        "local_tokens": 55,
+        "hosted": null
+      },
+      {
+        "row": 154,
+        "text": "The Knicks went 7-23 on perimeter shooting. LAST SEASON WAS A FLUKE!!!!",
+        "local_label": "analysis",
+        "local_tokens": 22,
+        "hosted": null
+      },
+      {
+        "row": 155,
+        "text": "Playing like the 7th best player on his team",
+        "local_label": "reaction",
+        "local_tokens": 11,
+        "hosted": null
+      },
+      {
+        "row": 156,
+        "text": "It’s just one game but I’m a bit moved by this Philly team. They were defending their asses off in that 4th quarter at t",
+        "local_label": "reaction",
+        "local_tokens": 45,
+        "hosted": null
+      },
+      {
+        "row": 157,
+        "text": "Dogshit, Tatum. Paul George remains king",
+        "local_label": "reaction",
+        "local_tokens": 11,
+        "hosted": null
+      },
+      {
+        "row": 158,
+        "text": "Lebron with an all around performance 😮‍💨",
+        "local_label": "reaction",
+        "local_tokens": 10,
+        "hosted": null
+      },
+      {
+        "row": 159,
+        "text": "good to know the 20-point blown leads aren’t going anywhere lmao",
+        "local_label": "reaction",
+        "local_tokens": 19,
+        "hosted": null
+      },
+      {
+        "row": 160,
+        "text": "Remember when Golden State let their bench go for salary reasons, but still found a way to win? The reason why this disc",
+        "local_label": "analysis",
+        "local_tokens": 141,
+        "hosted": null
+      },
+      {
+        "row": 161,
+        "text": "That handshake with Maxey😂 gotta practice it my King",
+        "local_label": "reaction",
+        "local_tokens": 13,
+        "hosted": null
+      },
+      {
+        "row": 162,
+        "text": "Anfernee Simons......played exactly like how you'd think he would how TF did we get this guy 😭😭😭",
+        "local_label": "reaction",
+        "local_tokens": 32,
+        "hosted": null
+      },
+      {
+        "row": 163,
+        "text": "Get used to this Boston , it’s only downhill from here",
+        "local_label": "hot_take",
+        "local_tokens": 15,
+        "hosted": null
+      },
+      {
+        "row": 164,
+        "text": "So many overreactions in here already. We all didn’t change much over the offseason. There’s so much game left guys",
+        "local_label": "reaction",
+        "local_tokens": 32,
+        "hosted": null
+      },
+      {
+        "row": 165,
+        "text": "Robinson helped Miami make the NBA finals, he is one of purest shooters to ever play in the NBA.",
+        "local_label": "analysis",
+        "local_tokens": 24,
+        "hosted": null
+      },
+      {
+        "row": 166,
+        "text": "The refs this game were pretty typical of early season officiating. The players should be able to adjust regardless.",
+        "local_label": "hot_take",
+        "local_tokens": 26,
+        "hosted": null
+      },
+      {
+        "row": 167,
+        "text": "Kinda. 50% is redistributed to non tax paying teams. 50% is used to fund revenue sharing, which gives money to teams wit",
+        "local_label": "analysis",
+        "local_tokens": 38,
+        "hosted": null
+      },
+      {
+        "row": 168,
+        "text": "I'm guessing we are going to have to let IHart go when his deal is up so we are banking on some of these youngsters bein",
+        "local_label": "hot_take",
+        "local_tokens": 93,
+        "hosted": null
+      },
+      {
+        "row": 169,
+        "text": "I think Wemby has a legitimate claim to be the best player in the world and won’t overreact to 1 game. However, his offe",
+        "local_label": "hot_take",
+        "local_tokens": 56,
+        "hosted": null
+      },
+      {
+        "row": 170,
+        "text": "These commentators are horrible. \"Do you think if the Sixers go 15-5 in the first 20 games it'll send a message?\" I don'",
+        "local_label": "reaction",
+        "local_tokens": 44,
+        "hosted": null
+      },
+      {
+        "row": 171,
+        "text": "He's as important as the rest IMO. You could see it at the end of the game when they started to just try to work it to h",
+        "local_label": "reaction",
+        "local_tokens": 47,
+        "hosted": null
+      },
+      {
+        "row": 172,
+        "text": "They can never make me hate PG. The early 2010’s Pacers teams were some nasty defenses.",
+        "local_label": "reaction",
+        "local_tokens": 23,
+        "hosted": null
+      },
+      {
+        "row": 173,
+        "text": "That would definitely be interesting, it would make negotiating way different too. Someone who signed for 20% in 2021 of",
+        "local_label": "analysis",
+        "local_tokens": 38,
+        "hosted": null
+      },
+      {
+        "row": 174,
+        "text": "You’re not really paying him for his offense but with Dort gone he will score above 12ppg for sure. I think it’s a solid",
+        "local_label": "hot_take",
+        "local_tokens": 41,
+        "hosted": null
+      },
+      {
+        "row": 175,
+        "text": "Can’t wait to exceed media expectations for the 5th year in a row.",
+        "local_label": "hot_take",
+        "local_tokens": 18,
+        "hosted": null
+      },
+      {
+        "row": 176,
+        "text": "That’s not accurate. A team that is $10 million past the 2nd apron will have a luxury tax bill over $100 million. Add $5",
+        "local_label": "analysis",
+        "local_tokens": 137,
+        "hosted": null
+      },
+      {
+        "row": 177,
+        "text": "thanks for breaking it down I knew it was crazy when I read knicks not signing Mitch (to 15 per year) saved like 100m or",
+        "local_label": "analysis",
+        "local_tokens": 55,
+        "hosted": null
+      },
+      {
+        "row": 178,
+        "text": "He was always a slow starter. I remember when Patrick McCaw was a rookie Klay was historically bad to start that year",
+        "local_label": "hot_take",
+        "local_tokens": 27,
+        "hosted": null
+      },
+      {
+        "row": 179,
+        "text": "He's been 1st team all-nba 4 times and top 5 in MVP voting twice... I'm not even a tatum guy but let's not pretend he ha",
+        "local_label": "analysis",
+        "local_tokens": 45,
+        "hosted": null
+      },
+      {
+        "row": 180,
+        "text": "I never understood the celtics hype this year in general. Without Brown and with Tatum coming off of a major major injur",
+        "local_label": "analysis",
+        "local_tokens": 59,
+        "hosted": null
+      },
+      {
+        "row": 181,
+        "text": "This was the lightest offensive load I’ve ever seen him carry in a win. No more than a handful of possessions where he w",
+        "local_label": "reaction",
+        "local_tokens": 65,
+        "hosted": null
+      },
+      {
+        "row": 182,
+        "text": "In 2020-2021 Sixers were the #1 seed in the East (don't talk about the playoffs), while the 2020 Eagles were one of the ",
+        "local_label": "analysis",
+        "local_tokens": 40,
+        "hosted": null
+      },
+      {
+        "row": 183,
+        "text": "Cade had a +/- of -1 this game and only shot 8-22. That was a deep bench showout not Cade carrying",
+        "local_label": "reaction",
+        "local_tokens": 30,
+        "hosted": null
+      },
+      {
+        "row": 184,
+        "text": "Players that seem to be hurt by the new CBA are guys like Braondon Miller that would have just been given a max rookie e",
+        "local_label": "analysis",
+        "local_tokens": 148,
+        "hosted": null
+      },
+      {
+        "row": 185,
+        "text": "I have the wolves at 4 or 5 depending on what I think of the 76ers that day",
+        "local_label": "hot_take",
+        "local_tokens": 21,
+        "hosted": null
+      },
+      {
+        "row": 186,
+        "text": "We got 5 rings and 10yrs more prime of Wemby, we fine here.",
+        "local_label": "hot_take",
+        "local_tokens": 21,
+        "hosted": null
+      },
+      {
+        "row": 187,
+        "text": "I bet they're crying backstage rn. They were silent on some crazy sixers plays. The big one was the steal and oop(i forg",
+        "local_label": "reaction",
+        "local_tokens": 51,
+        "hosted": null
+      },
+      {
+        "row": 188,
+        "text": "Spurs 3 Guard line up 0-5 from 3 with one(harper) having no attempts",
+        "local_label": "analysis",
+        "local_tokens": 20,
+        "hosted": null
+      },
+      {
+        "row": 189,
+        "text": "wait is he a priest now what is going on",
+        "local_label": "reaction",
+        "local_tokens": 12,
+        "hosted": null
+      },
+      {
+        "row": 190,
+        "text": "Trades have to be coming. Otherwise they’ll be in the second apron in no time. I’m glad they don’t have a brilliant GM w",
+        "local_label": "hot_take",
+        "local_tokens": 54,
+        "hosted": null
+      },
+      {
+        "row": 191,
+        "text": "There are some valid points here, but I don't know how much the union wants to lead with things like \"as exampled by 30 ",
+        "local_label": "hot_take",
+        "local_tokens": 145,
+        "hosted": null
+      },
+      {
+        "row": 192,
+        "text": "I haven't seen the specific breakdown of Wallace's extension, but let's assume he's getting paid $27.8 million next year",
+        "local_label": "analysis",
+        "local_tokens": 182,
+        "hosted": null
+      },
+      {
+        "row": 193,
+        "text": "Can’t believe some people thought the Paul George trade was going to be bad. He’s currently averaging 38 PPG.",
+        "local_label": "reaction",
+        "local_tokens": 28,
+        "hosted": null
+      },
+      {
+        "row": 194,
+        "text": "Downvotes over a guy that has 1 FTA in a half while usually having 10+ is wild.",
+        "local_label": "reaction",
+        "local_tokens": 24,
+        "hosted": null
+      },
+      {
+        "row": 195,
+        "text": "I said it in another comment, but they've avoided tax payments up to now, but they're currently projected to have a $140",
+        "local_label": "analysis",
+        "local_tokens": 50,
+        "hosted": null
+      },
+      {
+        "row": 196,
+        "text": "If a career 46% fg guy turns into a 25% fg guy, things will be bad. Maybe let's give it a few games first lol.",
+        "local_label": "analysis",
+        "local_tokens": 37,
+        "hosted": null
+      },
+      {
+        "row": 197,
+        "text": "Love seeing PG light it up! Stay healthy and keep it Pushin P",
+        "local_label": "reaction",
+        "local_tokens": 17,
+        "hosted": null
+      },
+      {
+        "row": 198,
+        "text": "Simons lived up to expectations for me, huge signing. He hit several momentum 3s that kept us in it. KCP looking like hi",
+        "local_label": "reaction",
+        "local_tokens": 67,
+        "hosted": null
+      },
+      {
+        "row": 199,
+        "text": "In a game with Tatum and Cade, PG looking by far the best on the floor lol",
+        "local_label": "reaction",
+        "local_tokens": 21,
+        "hosted": null
+      },
+      {
+        "row": 200,
+        "text": "It's classic engagement bait. The Timberwolves in the same tier as the Suns and behind the Heat, the Pistons a tier abov",
+        "local_label": "analysis",
+        "local_tokens": 45,
+        "hosted": null
+      },
+      {
+        "row": 201,
+        "text": "fold? they're currently bent over Cason Wallace just signed for 27M annually",
+        "local_label": "analysis",
+        "local_tokens": 19,
+        "hosted": null
+      },
+      {
+        "row": 202,
+        "text": "Yeah, expectations are for a deep playoff run, not can this team even make the playoffs.",
+        "local_label": "hot_take",
+        "local_tokens": 21,
+        "hosted": null
+      },
+      {
+        "row": 203,
+        "text": "At least he has you beating the Lakers in the 1st round (despite finishing behind them in the standings)",
+        "local_label": "analysis",
+        "local_tokens": 23,
+        "hosted": null
+      },
+      {
+        "row": 204,
+        "text": "One thing people miss is when stars take paycuts, it gives FO and owners bargaining power to go “Wemby is taking less th",
+        "local_label": "hot_take",
+        "local_tokens": 51,
+        "hosted": null
+      },
+      {
+        "row": 205,
+        "text": "The minute he got the and one foul someone was complaining about him flopping 😂",
+        "local_label": "reaction",
+        "local_tokens": 18,
+        "hosted": null
+      },
+      {
+        "row": 206,
+        "text": "Shooting really doesn't decrease with age. The ability to get open does",
+        "local_label": "hot_take",
+        "local_tokens": 17,
+        "hosted": null
+      },
+      {
+        "row": 207,
+        "text": "Yeah, that does seem kinda low right? Shit, VJ had 34 in his first game for the Sixers.",
+        "local_label": "analysis",
+        "local_tokens": 26,
+        "hosted": null
+      },
+      {
+        "row": 208,
+        "text": "38% isn’t good enough if 3pt shooting is your only NBA level skill. He can’t do anything else on offense at this point a",
+        "local_label": "analysis",
+        "local_tokens": 44,
+        "hosted": null
+      },
+      {
+        "row": 209,
+        "text": "It's not the same as lamelo though. Lamelo was a max guy and this is not a max deal",
+        "local_label": "reaction",
+        "local_tokens": 26,
+        "hosted": null
+      },
+      {
+        "row": 210,
+        "text": "the mvp race narratives this year will be interesting if okc stays healthy and the spurs are no longer beating them. hea",
+        "local_label": "analysis",
+        "local_tokens": 44,
+        "hosted": null
+      },
+      {
+        "row": 211,
+        "text": "Should've got a Christmas game vs these 2 teams",
+        "local_label": "hot_take",
+        "local_tokens": 13,
+        "hosted": null
+      },
+      {
+        "row": 212,
+        "text": "Sucks because if it wasn't for Cade the outcome of this game woulda been very different. Its almost like hes gonna have ",
+        "local_label": "reaction",
+        "local_tokens": 41,
+        "hosted": null
+      },
+      {
+        "row": 213,
+        "text": "I wish they would shut the hell up about them having a rivalry",
+        "local_label": "hot_take",
+        "local_tokens": 15,
+        "hosted": null
+      },
+      {
+        "row": 214,
+        "text": "Love it. This is incredible for all the Hornets fans who thought that Lamelo was a “liability, couldnt play meaningful b",
+        "local_label": "analysis",
+        "local_tokens": 85,
+        "hosted": null
+      },
+      {
+        "row": 215,
+        "text": "It literally is crazy. Most of this sub was calling the Pistons the worst #1 seed in history last year and like they wou",
+        "local_label": "hot_take",
+        "local_tokens": 57,
+        "hosted": null
+      },
+      {
+        "row": 216,
+        "text": "Exactly! The fact there is a \"max\" has made it an ego thing for players to get it and a bar that too many are getting li",
+        "local_label": "hot_take",
+        "local_tokens": 106,
+        "hosted": null
+      },
+      {
+        "row": 217,
+        "text": "This guy is like 2% better than Devin Vassell, getting paid almost double Yeesh",
+        "local_label": "reaction",
+        "local_tokens": 21,
+        "hosted": null
+      },
+      {
+        "row": 218,
+        "text": "I hate this guy but I'll take 13 years of above 38% threes over a couple preseason games. Shooting tends to outlast othe",
+        "local_label": "analysis",
+        "local_tokens": 69,
+        "hosted": null
+      },
+      {
+        "row": 219,
+        "text": "Tirico just said \"no, a eagle\" but the correct grammar is \"no, AN eagle\"",
+        "local_label": "hot_take",
+        "local_tokens": 24,
+        "hosted": null
+      },
+      {
+        "row": 220,
+        "text": "Lol he always starts slow, even in the season where he led the league in 3PM",
+        "local_label": "analysis",
+        "local_tokens": 21,
+        "hosted": null
+      },
+      {
+        "row": 221,
+        "text": "That’s because players are guaranteed exactly 51% of Basketball Related Income (BRI). No more. No less. Luxury tax payme",
+        "local_label": "analysis",
+        "local_tokens": 49,
+        "hosted": null
+      },
+      {
+        "row": 222,
+        "text": "no, 40 million for an always injured small forward who isn't a good defender and isn't efficient is great. As long as he",
+        "local_label": "hot_take",
+        "local_tokens": 44,
+        "hosted": null
+      },
+      {
+        "row": 223,
+        "text": "They can ask for that, but the owners will never agree because it will mean the buyout player's salary is coming out of ",
+        "local_label": "hot_take",
+        "local_tokens": 36,
+        "hosted": null
+      },
+      {
+        "row": 224,
+        "text": "Just so it’s clear…however they are distributed, player salaries as a whole will always equal 51% of Basketball Related ",
+        "local_label": "analysis",
+        "local_tokens": 87,
+        "hosted": null
+      },
+      {
+        "row": 225,
+        "text": "Sixers running effectively a 7 man rotation with a 50 year old and a 30 year old with 50 year old knees. This is just fi",
+        "local_label": "reaction",
+        "local_tokens": 31,
+        "hosted": null
+      },
+      {
+        "row": 226,
+        "text": "Like 4 of them are missed put backs. Rough start for sure lmao",
+        "local_label": "reaction",
+        "local_tokens": 18,
+        "hosted": null
+      },
+      {
+        "row": 227,
+        "text": "Beating the reigning champs with some ridiculous 1H home cooking is awesome. Offense generated the most open looks I've ",
+        "local_label": "reaction",
+        "local_tokens": 57,
+        "hosted": null
+      },
+      {
+        "row": 228,
+        "text": "Ausar with 11 points 11 rebounds 5 assists and world class defense",
+        "local_label": "analysis",
+        "local_tokens": 15,
+        "hosted": null
+      },
+      {
+        "row": 229,
+        "text": "In three fucken years, this line of thinking is why we will never have a serious team. \"We have this great player but in",
+        "local_label": "hot_take",
+        "local_tokens": 55,
+        "hosted": null
+      }
+    ]
+  },
+  "c3": {
+    "median_server_ms": null,
+    "max_round_trip_ms": 19371.4,
+    "mean_server_ms": 169.7,
+    "met": false,
+    "runs": [
+      {
+        "http_status": 502,
+        "request_id": null,
+        "server_ms": null,
+        "round_trip_ms": 165.0
+      },
+      {
+        "http_status": 200,
+        "request_id": "af0f99bd",
+        "server_ms": 160.9,
+        "round_trip_ms": 19371.4
+      },
+      {
+        "http_status": 200,
+        "request_id": "55ecc09c",
+        "server_ms": 149.3,
+        "round_trip_ms": 384.0
+      },
+      {
+        "http_status": 200,
+        "request_id": "50853372",
+        "server_ms": 178.2,
+        "round_trip_ms": 399.1
+      },
+      {
+        "http_status": 200,
+        "request_id": "63250414",
+        "server_ms": 166.3,
+        "round_trip_ms": 310.3
+      },
+      {
+        "http_status": 200,
+        "request_id": "95844e5c",
+        "server_ms": 169.2,
+        "round_trip_ms": 300.8
+      },
+      {
+        "http_status": 200,
+        "request_id": "0394c29e",
+        "server_ms": 209.8,
+        "round_trip_ms": 498.3
+      },
+      {
+        "http_status": 200,
+        "request_id": "7d0ac320",
+        "server_ms": 160.8,
+        "round_trip_ms": 305.2
+      },
+      {
+        "http_status": 200,
+        "request_id": "d8d134e9",
+        "server_ms": 146.6,
+        "round_trip_ms": 297.7
+      },
+      {
+        "http_status": 200,
+        "request_id": "f8a40fed",
+        "server_ms": 186.2,
+        "round_trip_ms": 511.2
+      }
+    ]
+  },
+  "c4": {
+    "http_status": 200,
+    "labelled": 50,
+    "request_id": "09f4dbf2",
+    "server_ms": 43651.1,
+    "round_trip_ms": 43982.9,
+    "all_truncated": true,
+    "request_record": {
+      "ts": "2026-11-16T04:12:24.151+00:00",
+      "run_id": "09f4dbf2",
+      "event": "request",
+      "path": "/classify",
+      "status_code": 200,
+      "latency_ms": 43651.1,
+      "n_posts": 50,
+      "error": null,
+      "rss_mib": 470.5,
+      "peak_rss_mib": 469.8
+    },
+    "met": false
+  },
+  "c5": {
+    "startup_peak_mib": 465.8,
+    "after_batch_peak_mib": 469.8,
+    "startup_record": {
+      "ts": "2026-11-16T04:08:43.560+00:00",
+      "run_id": null,
+      "event": "startup",
+      "model": "takemeter_onnx",
+      "backend": "onnx",
+      "runtime": "onnxruntime 1.32.0",
+      "labels": [
+        "analysis",
+        "hot_take",
+        "reaction"
+      ],
+      "model_load_ms": 4700.8,
+      "rss_mib": 466.8,
+      "peak_rss_mib": 465.8,
+      "python": "3.13.1"
+    },
+    "met": true
+  },
+  "verdicts": {
+    "c1": true,
+    "c2": false,
+    "c3": false,
+    "c4": false,
+    "c5": true
+  }
+}

@@ -954,3 +954,152 @@ Other costs the log shows:
 | A full 50-post batch of long posts | 42.9 s (~860 ms per post) | `request` record `66b8f40d`, `latency_ms: 42941.2` |
 | A rejected post | 0.0 ms | rejected before the model runs |
 | Memory | 439–471 MiB peak of 512, depending on the boot | `peak_rss_mb` in the `startup` and `request` records |
+
+**Run Log — Before**
+
+Three trials against https://takemeter.onrender.com on 2026-11-16 (UTC), each
+on a **separate boot** and at least 5 minutes apart. They were run with
+`python run_criteria.py https://takemeter.onrender.com --label before --trial
+N`, which saves every response to `results_capstone_before_trialN.json` and
+the server's log to `logs/capstone_before_trialN_server.jsonl`. Criteria are
+in `criteria.md` (committed in `d4ebe51`, before any of these runs).
+
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+|---|---|---|---|---|---|
+| 1. Bad input gets no label and leaves a record | 15/15 handled and 15/15 logged | 15/15 · 15/15 | 15/15 · 15/15 | 15/15 · 15/15 | **MET** |
+| 2. Hosted answers match the trained model | 229/229 labels and 229/229 `truncated` | 229/229 · 229/229 | 200/229 · 200/229 | 150/229 · 150/229 | **MISSED** |
+| 3. Warm single post | median server ≤ 250 ms and every round trip ≤ 1,000 ms | 162.2 ms · 605.5 ms | 239.5 ms · 514.7 ms | 148.4 ms · 419.6 ms | **MET** |
+| 4. 50-post batch of long posts | server `latency_ms` ≤ 30,000 ms | 43,651.5 ms | 44,114.2 ms | 43,763.6 ms | **MISSED** |
+| 5. Memory headroom | `peak_rss_mib` ≤ 480 at startup and after the batch | 466.2 · 473.2 | 437.7 · 440.6 | 442.4 · 470.0 | **MET** |
+
+What the rows don't show on their own:
+
+- **Run 2 and run 3 each restarted mid-trial.** No one touched the
+  dashboard. C2's last batches got a `502` from Render's proxy, and the
+  service was down 36.9 s (run 2) and 32.0 s (run 3) before a new `startup`
+  record. Render's Events tab, for run 2's restart:
+
+  ```
+  Instance failed: 8s9zn
+  HTTP health check failed (timed out after 5 seconds) while running your code.
+  November 15, 2026 at 11:37 PM      (= 04:37 UTC)
+  Service recovered
+  Recently failed instances are now reporting healthy.
+  November 15, 2026 at 11:37 PM
+  ```
+- **Every post that got an answer matched.** In all three runs, 0 hosted
+  labels and 0 `truncated` flags differed from the local PyTorch model. C2's
+  misses are the posts in batches that got a `502`, not wrong answers.
+- **The script waits out a crash before C3 and C4** (and records how long it
+  waited), so those two still measure latency and batch time, not "the
+  service is down". Run 2's C3 started 20 s after the restart. That
+  probably explains its higher median (239.5 ms, just under 250).
+- **Run 3's two memory numbers come from two boots.** 442.4 MiB is the
+  `startup` of the boot the trial started on, and 470.0 MiB is after the
+  batch, on the boot that came up after the crash. Both are under 480.
+- **Four earlier attempts are kept but don't count.** Two were interrupted by
+  me restarting the service mid-run (`*_INTERRUPTED*.json`). One ran on the
+  first version of `run_criteria.py`, which kept no log once the instance
+  restarted and let one crash fail every later criterion
+  (`*_HARNESSv1.json`). I changed the script, not the system, so it
+  snapshots `/logs` after every step and waits out an outage. Then I re-ran
+  run 1. The memory and latency numbers in those files are consistent with
+  the three runs above.
+
+**Real output, run 2** (`results_capstone_before_trial2.json` and
+`logs/capstone_before_trial2_server.jsonl`)
+
+*Criterion 1.* `run_criteria.py`, `check_bad_inputs()`: the response to each
+of the 15 cases, with its HTTP status and request id.
+
+```
+1  body not JSON              400 176bf305 {"error": "body is not JSON. Send {\"text\": \"...\"} or {\"posts\": [...]}"}
+2  neither text nor posts     400 6ce73a35 {"error": "expected {\"text\": \"...\"} or {\"posts\": [\"...\", ...]}"}
+3  posts not a list           400 9102d340 {"error": "\"posts\" must be a list"}
+4  posts an empty list        400 2519b50c {"error": "\"posts\" is empty"}
+5  51 posts                   413 25e3aaf0 {"error": "51 posts; the limit is 50 per request"}
+6  body over 1 MB             413 c51b4c3f {"error": "request body over 1000000 bytes"}
+7  empty string               200 4ee17a35 {"status": "rejected", "label": null, "reason": "empty"}
+8  whitespace only            200 180b4e90 {"status": "rejected", "label": null, "reason": "empty"}
+9  emoji only                 200 4b503c47 {"status": "rejected", "label": null, "reason": "no_words"}
+10 link only                  200 1193b43c {"status": "rejected", "label": null, "reason": "link_only"}
+11 bare score                 200 17b5ab28 {"status": "rejected", "label": null, "reason": "no_words"}
+12 10,001 chars of words      200 163129bc {"status": "rejected", "label": null, "reason": "too_long (10001 chars > 10000)"}
+13 a number                   200 af9d58e5 {"status": "rejected", "label": null, "reason": "not_text (int)"}
+14 null                       200 f1031afe {"status": "rejected", "label": null, "reason": "missing"}
+15 zero-width spaces only     200 2c88f7c8 {"status": "rejected", "label": null, "reason": "no_words"}
+```
+
+The server's records for cases 6, 9 and 15, written by `server.py`
+(`classify_endpoint()` → `ServerLog.write()`):
+
+```jsonl
+{"ts": "2026-11-16T04:35:00.307+00:00", "run_id": "c51b4c3f", "event": "request", "path": "/classify", "status_code": 413, "latency_ms": 195.1, "n_posts": 0, "error": "request body over 1000000 bytes", "rss_mib": 367.0, "peak_rss_mib": 437.7}
+{"ts": "2026-11-16T04:35:00.914+00:00", "run_id": "4b503c47", "event": "post", "source": "http", "row": 1, "latency_ms": 0.6, "input": "🔥🔥🔥", "status": "rejected", "label": null, "confidence": null, "tokens": null, "truncated": null, "reason": "no_words", "input_chars": 3}
+{"ts": "2026-11-16T04:35:00.914+00:00", "run_id": "4b503c47", "event": "request", "path": "/classify", "status_code": 200, "latency_ms": 1.0, "n_posts": 1, "error": null, "rss_mib": 367.0, "peak_rss_mib": 437.7}
+{"ts": "2026-11-16T04:35:01.852+00:00", "run_id": "2c88f7c8", "event": "post", "source": "http", "row": 1, "latency_ms": 0.0, "input": "​​", "status": "rejected", "label": null, "confidence": null, "tokens": null, "truncated": null, "reason": "no_words", "input_chars": 2}
+{"ts": "2026-11-16T04:35:01.852+00:00", "run_id": "2c88f7c8", "event": "request", "path": "/classify", "status_code": 200, "latency_ms": 0.3, "n_posts": 1, "error": null, "rss_mib": 367.0, "peak_rss_mib": 437.7}
+```
+
+(The emoji came through intact this time, because the script sends it as
+UTF-8 from Python. The zero-width spaces are shown escaped. In the file they
+are the raw characters.)
+
+*Criterion 2.* `run_criteria.py`, `check_same_answers()`, then the server's
+records around the crash, by `server.py` `_finish()` and the module-level
+startup code.
+
+```
+C2 same answers labels 200/229  truncated 200/229  (8 over 128)
+batch_failures: [(200, 502)]        mismatches among answered posts: 0
+   outage before C3: waited 36.9s, uptime now 19.9s, 1 new startup record(s)
+```
+
+```jsonl
+{"ts": "2026-11-16T04:31:44.321+00:00", "run_id": null, "event": "startup", "model": "takemeter_onnx", "backend": "onnx", "runtime": "onnxruntime 1.32.0", "labels": ["analysis", "hot_take", "reaction"], "model_load_ms": 7791.7, "rss_mib": 363.4, "peak_rss_mib": 437.7, "python": "3.13.1"}
+{"ts": "2026-11-16T04:35:39.817+00:00", "run_id": "850efcd1", "event": "request", "path": "/classify", "status_code": 200, "latency_ms": 16600.5, "n_posts": 50, "error": null, "rss_mib": 371.6, "peak_rss_mib": 437.7}
+{"ts": "2026-11-16T04:35:55.419+00:00", "run_id": "e9b42c54", "event": "request", "path": "/classify", "status_code": 200, "latency_ms": 15279.3, "n_posts": 50, "error": null, "rss_mib": 373.3, "peak_rss_mib": 437.7}
+{"ts": "2026-11-16T04:36:09.517+00:00", "run_id": "02f3e8f3", "event": "request", "path": "/classify", "status_code": 200, "latency_ms": 13479.3, "n_posts": 50, "error": null, "rss_mib": 373.8, "peak_rss_mib": 437.7}
+{"ts": "2026-11-16T04:36:52.373+00:00", "run_id": null, "event": "startup", "model": "takemeter_onnx", "backend": "onnx", "runtime": "onnxruntime 1.32.0", "labels": ["analysis", "hot_take", "reaction"], "model_load_ms": 7306.8, "rss_mib": 365.6, "peak_rss_mib": 440.6, "python": "3.13.1"}
+```
+
+The 4th batch (posts 150–199) returned `200` to the script, but its
+`request` record isn't in the saved log. The instance failed before the next
+`/logs` snapshot, and its disk went with it. So a request can succeed and
+still leave no record anywhere I kept. It would only be in Render's Logs tab.
+
+*Criterion 3.* `run_criteria.py`, `check_warm_latency()`: 10 runs after one
+untimed warm-up.
+
+```
+{"http_status": 200, "request_id": "729492d3", "server_ms": 239.4, "round_trip_ms": 393.6}
+{"http_status": 200, "request_id": "0590f8de", "server_ms": 239.6, "round_trip_ms": 409.1}
+{"http_status": 200, "request_id": "a62ba700", "server_ms": 244.4, "round_trip_ms": 391.8}
+{"http_status": 200, "request_id": "6be0b3c1", "server_ms": 259.7, "round_trip_ms": 412.5}
+{"http_status": 200, "request_id": "6409b2d4", "server_ms": 240.1, "round_trip_ms": 392.9}
+{"http_status": 200, "request_id": "cd276995", "server_ms": 229.8, "round_trip_ms": 396.5}
+{"http_status": 200, "request_id": "0945d616", "server_ms": 252.7, "round_trip_ms": 397.0}
+{"http_status": 200, "request_id": "2a23c3ee", "server_ms": 192.2, "round_trip_ms": 514.7}
+{"http_status": 200, "request_id": "23ab5ff4", "server_ms": 147.9, "round_trip_ms": 298.2}
+{"http_status": 200, "request_id": "ef27f1e5", "server_ms": 133.8, "round_trip_ms": 295.5}
+median server 239.5 ms · max round trip 514.7 ms
+```
+
+*Criterion 4.* `run_criteria.py`, `check_big_batch()`, and the server's
+`request` record for that call (`server.py` `_finish()`).
+
+```
+{"http_status": 200, "labelled": 50, "request_id": "e8fd0890", "server_ms": 44114.2, "round_trip_ms": 44379.5, "all_truncated": true}
+```
+```jsonl
+{"ts": "2026-11-16T04:37:54.072+00:00", "run_id": "e8fd0890", "event": "request", "path": "/classify", "status_code": 200, "latency_ms": 44114.2, "n_posts": 50, "error": null, "rss_mib": 379.7, "peak_rss_mib": 440.6}
+```
+
+*Criterion 5.* `run_criteria.py`, `check_memory()`, reading
+`peak_rss_mib` from the `startup` record above (437.7) and from the C4
+`request` record (440.6). Both come from `server.py` `memory_mib()`
+(`ru_maxrss` and `/proc/self/statm`).
+
+```
+C5 memory       startup peak 437.7 MiB  after batch 440.6 MiB
+```

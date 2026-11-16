@@ -1,0 +1,1057 @@
+{
+  "label": "before",
+  "trial": 2,
+  "url": "https://takemeter.onrender.com",
+  "started_utc": "2026-11-16T04:34:58+00:00",
+  "health_at_start": {
+    "status": "ok",
+    "uptime_s": 202.0,
+    "backend": "onnx",
+    "rss_mib": 367.0,
+    "peak_rss_mib": 437.7
+  },
+  "targets": {
+    "c1_cases": 15,
+    "c2_posts": 229,
+    "c3_median_server_ms": 250.0,
+    "c3_max_round_trip_ms": 1000.0,
+    "c4_server_ms": 30000.0,
+    "c5_peak_mib": 480.0
+  },
+  "outages": [
+    {
+      "before": "C3",
+      "waited_s": 36.9,
+      "uptime_s_after": 19.9,
+      "new_startup_records": [
+        {
+          "ts": "2026-11-16T04:36:52.373+00:00",
+          "run_id": null,
+          "event": "startup",
+          "model": "takemeter_onnx",
+          "backend": "onnx",
+          "runtime": "onnxruntime 1.32.0",
+          "labels": [
+            "analysis",
+            "hot_take",
+            "reaction"
+          ],
+          "model_load_ms": 7306.8,
+          "rss_mib": 365.6,
+          "peak_rss_mib": 440.6,
+          "python": "3.13.1"
+        }
+      ]
+    }
+  ],
+  "restarts_during_trial": 1,
+  "harness": "v2 (log snapshots + recovery waits)",
+  "c1": {
+    "handled": 15,
+    "logged": 15,
+    "n": 15,
+    "met": true,
+    "cases": [
+      {
+        "id": "1",
+        "case": "body not JSON",
+        "level": "request",
+        "http_status": 400,
+        "request_id": "176bf305",
+        "round_trip_ms": 324.6,
+        "response": {
+          "error": "body is not JSON. Send {\"text\": \"...\"} or {\"posts\": [...]}",
+          "request_id": "176bf305"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:34:59.052+00:00",
+            "run_id": "176bf305",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 400,
+            "latency_ms": 0.2,
+            "n_posts": 0,
+            "error": "body is not JSON. Send {\"text\": \"...\"} or {\"posts\": [...]}",
+            "rss_mib": 367.0,
+            "peak_rss_mib": 437.7
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "case": "JSON with neither text nor posts",
+        "level": "request",
+        "http_status": 400,
+        "request_id": "6ce73a35",
+        "round_trip_ms": 160.2,
+        "response": {
+          "error": "expected {\"text\": \"...\"} or {\"posts\": [\"...\", ...]}",
+          "request_id": "6ce73a35"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:34:59.218+00:00",
+            "run_id": "6ce73a35",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 400,
+            "latency_ms": 0.2,
+            "n_posts": 0,
+            "error": "expected {\"text\": \"...\"} or {\"posts\": [\"...\", ...]}",
+            "rss_mib": 367.0,
+            "peak_rss_mib": 437.7
+          }
+        ]
+      },
+      {
+        "id": "3",
+        "case": "posts not a list",
+        "level": "request",
+        "http_status": 400,
+        "request_id": "9102d340",
+        "round_trip_ms": 156.9,
+        "response": {
+          "error": "\"posts\" must be a list",
+          "request_id": "9102d340"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:34:59.369+00:00",
+            "run_id": "9102d340",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 400,
+            "latency_ms": 0.2,
+            "n_posts": 0,
+            "error": "\"posts\" must be a list",
+            "rss_mib": 367.0,
+            "peak_rss_mib": 437.7
+          }
+        ]
+      },
+      {
+        "id": "4",
+        "case": "posts an empty list",
+        "level": "request",
+        "http_status": 400,
+        "request_id": "2519b50c",
+        "round_trip_ms": 137.0,
+        "response": {
+          "error": "\"posts\" is empty",
+          "request_id": "2519b50c"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:34:59.512+00:00",
+            "run_id": "2519b50c",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 400,
+            "latency_ms": 0.2,
+            "n_posts": 0,
+            "error": "\"posts\" is empty",
+            "rss_mib": 367.0,
+            "peak_rss_mib": 437.7
+          }
+        ]
+      },
+      {
+        "id": "5",
+        "case": "51 posts",
+        "level": "request",
+        "http_status": 413,
+        "request_id": "25e3aaf0",
+        "round_trip_ms": 150.5,
+        "response": {
+          "error": "51 posts; the limit is 50 per request",
+          "request_id": "25e3aaf0"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:34:59.659+00:00",
+            "run_id": "25e3aaf0",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 413,
+            "latency_ms": 0.2,
+            "n_posts": 0,
+            "error": "51 posts; the limit is 50 per request",
+            "rss_mib": 367.0,
+            "peak_rss_mib": 437.7
+          }
+        ]
+      },
+      {
+        "id": "6",
+        "case": "body over 1 MB",
+        "level": "request",
+        "http_status": 413,
+        "request_id": "c51b4c3f",
+        "round_trip_ms": 651.0,
+        "response": {
+          "error": "request body over 1000000 bytes",
+          "request_id": "c51b4c3f"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:35:00.307+00:00",
+            "run_id": "c51b4c3f",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 413,
+            "latency_ms": 195.1,
+            "n_posts": 0,
+            "error": "request body over 1000000 bytes",
+            "rss_mib": 367.0,
+            "peak_rss_mib": 437.7
+          }
+        ]
+      },
+      {
+        "id": "7",
+        "case": "empty string",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "4ee17a35",
+        "round_trip_ms": 293.0,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "empty",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "4ee17a35"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:35:00.608+00:00",
+            "run_id": "4ee17a35",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "empty",
+            "input_chars": 0
+          },
+          {
+            "ts": "2026-11-16T04:35:00.608+00:00",
+            "run_id": "4ee17a35",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.3,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 367.0,
+            "peak_rss_mib": 437.7
+          }
+        ]
+      },
+      {
+        "id": "8",
+        "case": "whitespace only",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "180b4e90",
+        "round_trip_ms": 174.7,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "empty",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "180b4e90"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:35:00.772+00:00",
+            "run_id": "180b4e90",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "   \n\t",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "empty",
+            "input_chars": 5
+          },
+          {
+            "ts": "2026-11-16T04:35:00.772+00:00",
+            "run_id": "180b4e90",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.3,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 367.0,
+            "peak_rss_mib": 437.7
+          }
+        ]
+      },
+      {
+        "id": "9",
+        "case": "emoji only",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "4b503c47",
+        "round_trip_ms": 134.2,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "no_words",
+              "latency_ms": 0.6
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "4b503c47"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:35:00.914+00:00",
+            "run_id": "4b503c47",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.6,
+            "input": "🔥🔥🔥",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "no_words",
+            "input_chars": 3
+          },
+          {
+            "ts": "2026-11-16T04:35:00.914+00:00",
+            "run_id": "4b503c47",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 1.0,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 367.0,
+            "peak_rss_mib": 437.7
+          }
+        ]
+      },
+      {
+        "id": "10",
+        "case": "link only",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "1193b43c",
+        "round_trip_ms": 163.3,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "link_only",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "1193b43c"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:35:01.066+00:00",
+            "run_id": "1193b43c",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "https://streamable.com/abc123",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "link_only",
+            "input_chars": 29
+          },
+          {
+            "ts": "2026-11-16T04:35:01.066+00:00",
+            "run_id": "1193b43c",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.4,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 367.0,
+            "peak_rss_mib": 437.7
+          }
+        ]
+      },
+      {
+        "id": "11",
+        "case": "bare score",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "17b5ab28",
+        "round_trip_ms": 144.3,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "no_words",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "17b5ab28"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:35:01.220+00:00",
+            "run_id": "17b5ab28",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "23-9",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "no_words",
+            "input_chars": 4
+          },
+          {
+            "ts": "2026-11-16T04:35:01.221+00:00",
+            "run_id": "17b5ab28",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.3,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 367.0,
+            "peak_rss_mib": 437.7
+          }
+        ]
+      },
+      {
+        "id": "12",
+        "case": "10,001 chars of words",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "163129bc",
+        "round_trip_ms": 170.7,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "too_long (10001 chars > 10000)",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "163129bc"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:35:01.392+00:00",
+            "run_id": "163129bc",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists an",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "too_long (10001 chars > 10000)",
+            "input_chars": 10001
+          },
+          {
+            "ts": "2026-11-16T04:35:01.392+00:00",
+            "run_id": "163129bc",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.5,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 367.0,
+            "peak_rss_mib": 437.7
+          }
+        ]
+      },
+      {
+        "id": "13",
+        "case": "a number",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "af9d58e5",
+        "round_trip_ms": 149.5,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "not_text (int)",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "af9d58e5"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:35:01.542+00:00",
+            "run_id": "af9d58e5",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "42",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "not_text (int)",
+            "input_chars": 2
+          },
+          {
+            "ts": "2026-11-16T04:35:01.542+00:00",
+            "run_id": "af9d58e5",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.3,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 367.0,
+            "peak_rss_mib": 437.7
+          }
+        ]
+      },
+      {
+        "id": "14",
+        "case": "null",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "f1031afe",
+        "round_trip_ms": 155.7,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "missing",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "f1031afe"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:35:01.697+00:00",
+            "run_id": "f1031afe",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "missing",
+            "input_chars": 0
+          },
+          {
+            "ts": "2026-11-16T04:35:01.698+00:00",
+            "run_id": "f1031afe",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.4,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 367.0,
+            "peak_rss_mib": 437.7
+          }
+        ]
+      },
+      {
+        "id": "15",
+        "case": "zero-width spaces only",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "2c88f7c8",
+        "round_trip_ms": 157.9,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "no_words",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "2c88f7c8"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:35:01.852+00:00",
+            "run_id": "2c88f7c8",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "​​",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "no_words",
+            "input_chars": 2
+          },
+          {
+            "ts": "2026-11-16T04:35:01.852+00:00",
+            "run_id": "2c88f7c8",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.3,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 367.0,
+            "peak_rss_mib": 437.7
+          }
+        ]
+      }
+    ]
+  },
+  "c2": {
+    "same_label": 200,
+    "truncated_correct": 200,
+    "n": 229,
+    "n_over_128": 8,
+    "met": false,
+    "batch_failures": [
+      {
+        "batch_start": 200,
+        "status": 502,
+        "response": ""
+      }
+    ],
+    "mismatches": [
+      {
+        "row": 201,
+        "text": "fold? they're currently bent over Cason Wallace just signed for 27M annually",
+        "local_label": "analysis",
+        "local_tokens": 19,
+        "hosted": null
+      },
+      {
+        "row": 202,
+        "text": "Yeah, expectations are for a deep playoff run, not can this team even make the playoffs.",
+        "local_label": "hot_take",
+        "local_tokens": 21,
+        "hosted": null
+      },
+      {
+        "row": 203,
+        "text": "At least he has you beating the Lakers in the 1st round (despite finishing behind them in the standings)",
+        "local_label": "analysis",
+        "local_tokens": 23,
+        "hosted": null
+      },
+      {
+        "row": 204,
+        "text": "One thing people miss is when stars take paycuts, it gives FO and owners bargaining power to go “Wemby is taking less th",
+        "local_label": "hot_take",
+        "local_tokens": 51,
+        "hosted": null
+      },
+      {
+        "row": 205,
+        "text": "The minute he got the and one foul someone was complaining about him flopping 😂",
+        "local_label": "reaction",
+        "local_tokens": 18,
+        "hosted": null
+      },
+      {
+        "row": 206,
+        "text": "Shooting really doesn't decrease with age. The ability to get open does",
+        "local_label": "hot_take",
+        "local_tokens": 17,
+        "hosted": null
+      },
+      {
+        "row": 207,
+        "text": "Yeah, that does seem kinda low right? Shit, VJ had 34 in his first game for the Sixers.",
+        "local_label": "analysis",
+        "local_tokens": 26,
+        "hosted": null
+      },
+      {
+        "row": 208,
+        "text": "38% isn’t good enough if 3pt shooting is your only NBA level skill. He can’t do anything else on offense at this point a",
+        "local_label": "analysis",
+        "local_tokens": 44,
+        "hosted": null
+      },
+      {
+        "row": 209,
+        "text": "It's not the same as lamelo though. Lamelo was a max guy and this is not a max deal",
+        "local_label": "reaction",
+        "local_tokens": 26,
+        "hosted": null
+      },
+      {
+        "row": 210,
+        "text": "the mvp race narratives this year will be interesting if okc stays healthy and the spurs are no longer beating them. hea",
+        "local_label": "analysis",
+        "local_tokens": 44,
+        "hosted": null
+      },
+      {
+        "row": 211,
+        "text": "Should've got a Christmas game vs these 2 teams",
+        "local_label": "hot_take",
+        "local_tokens": 13,
+        "hosted": null
+      },
+      {
+        "row": 212,
+        "text": "Sucks because if it wasn't for Cade the outcome of this game woulda been very different. Its almost like hes gonna have ",
+        "local_label": "reaction",
+        "local_tokens": 41,
+        "hosted": null
+      },
+      {
+        "row": 213,
+        "text": "I wish they would shut the hell up about them having a rivalry",
+        "local_label": "hot_take",
+        "local_tokens": 15,
+        "hosted": null
+      },
+      {
+        "row": 214,
+        "text": "Love it. This is incredible for all the Hornets fans who thought that Lamelo was a “liability, couldnt play meaningful b",
+        "local_label": "analysis",
+        "local_tokens": 85,
+        "hosted": null
+      },
+      {
+        "row": 215,
+        "text": "It literally is crazy. Most of this sub was calling the Pistons the worst #1 seed in history last year and like they wou",
+        "local_label": "hot_take",
+        "local_tokens": 57,
+        "hosted": null
+      },
+      {
+        "row": 216,
+        "text": "Exactly! The fact there is a \"max\" has made it an ego thing for players to get it and a bar that too many are getting li",
+        "local_label": "hot_take",
+        "local_tokens": 106,
+        "hosted": null
+      },
+      {
+        "row": 217,
+        "text": "This guy is like 2% better than Devin Vassell, getting paid almost double Yeesh",
+        "local_label": "reaction",
+        "local_tokens": 21,
+        "hosted": null
+      },
+      {
+        "row": 218,
+        "text": "I hate this guy but I'll take 13 years of above 38% threes over a couple preseason games. Shooting tends to outlast othe",
+        "local_label": "analysis",
+        "local_tokens": 69,
+        "hosted": null
+      },
+      {
+        "row": 219,
+        "text": "Tirico just said \"no, a eagle\" but the correct grammar is \"no, AN eagle\"",
+        "local_label": "hot_take",
+        "local_tokens": 24,
+        "hosted": null
+      },
+      {
+        "row": 220,
+        "text": "Lol he always starts slow, even in the season where he led the league in 3PM",
+        "local_label": "analysis",
+        "local_tokens": 21,
+        "hosted": null
+      },
+      {
+        "row": 221,
+        "text": "That’s because players are guaranteed exactly 51% of Basketball Related Income (BRI). No more. No less. Luxury tax payme",
+        "local_label": "analysis",
+        "local_tokens": 49,
+        "hosted": null
+      },
+      {
+        "row": 222,
+        "text": "no, 40 million for an always injured small forward who isn't a good defender and isn't efficient is great. As long as he",
+        "local_label": "hot_take",
+        "local_tokens": 44,
+        "hosted": null
+      },
+      {
+        "row": 223,
+        "text": "They can ask for that, but the owners will never agree because it will mean the buyout player's salary is coming out of ",
+        "local_label": "hot_take",
+        "local_tokens": 36,
+        "hosted": null
+      },
+      {
+        "row": 224,
+        "text": "Just so it’s clear…however they are distributed, player salaries as a whole will always equal 51% of Basketball Related ",
+        "local_label": "analysis",
+        "local_tokens": 87,
+        "hosted": null
+      },
+      {
+        "row": 225,
+        "text": "Sixers running effectively a 7 man rotation with a 50 year old and a 30 year old with 50 year old knees. This is just fi",
+        "local_label": "reaction",
+        "local_tokens": 31,
+        "hosted": null
+      },
+      {
+        "row": 226,
+        "text": "Like 4 of them are missed put backs. Rough start for sure lmao",
+        "local_label": "reaction",
+        "local_tokens": 18,
+        "hosted": null
+      },
+      {
+        "row": 227,
+        "text": "Beating the reigning champs with some ridiculous 1H home cooking is awesome. Offense generated the most open looks I've ",
+        "local_label": "reaction",
+        "local_tokens": 57,
+        "hosted": null
+      },
+      {
+        "row": 228,
+        "text": "Ausar with 11 points 11 rebounds 5 assists and world class defense",
+        "local_label": "analysis",
+        "local_tokens": 15,
+        "hosted": null
+      },
+      {
+        "row": 229,
+        "text": "In three fucken years, this line of thinking is why we will never have a serious team. \"We have this great player but in",
+        "local_label": "hot_take",
+        "local_tokens": 55,
+        "hosted": null
+      }
+    ]
+  },
+  "c3": {
+    "median_server_ms": 239.5,
+    "max_round_trip_ms": 514.7,
+    "mean_server_ms": 218.0,
+    "met": true,
+    "runs": [
+      {
+        "http_status": 200,
+        "request_id": "729492d3",
+        "server_ms": 239.4,
+        "round_trip_ms": 393.6
+      },
+      {
+        "http_status": 200,
+        "request_id": "0590f8de",
+        "server_ms": 239.6,
+        "round_trip_ms": 409.1
+      },
+      {
+        "http_status": 200,
+        "request_id": "a62ba700",
+        "server_ms": 244.4,
+        "round_trip_ms": 391.8
+      },
+      {
+        "http_status": 200,
+        "request_id": "6be0b3c1",
+        "server_ms": 259.7,
+        "round_trip_ms": 412.5
+      },
+      {
+        "http_status": 200,
+        "request_id": "6409b2d4",
+        "server_ms": 240.1,
+        "round_trip_ms": 392.9
+      },
+      {
+        "http_status": 200,
+        "request_id": "cd276995",
+        "server_ms": 229.8,
+        "round_trip_ms": 396.5
+      },
+      {
+        "http_status": 200,
+        "request_id": "0945d616",
+        "server_ms": 252.7,
+        "round_trip_ms": 397.0
+      },
+      {
+        "http_status": 200,
+        "request_id": "2a23c3ee",
+        "server_ms": 192.2,
+        "round_trip_ms": 514.7
+      },
+      {
+        "http_status": 200,
+        "request_id": "23ab5ff4",
+        "server_ms": 147.9,
+        "round_trip_ms": 298.2
+      },
+      {
+        "http_status": 200,
+        "request_id": "ef27f1e5",
+        "server_ms": 133.8,
+        "round_trip_ms": 295.5
+      }
+    ]
+  },
+  "c4": {
+    "http_status": 200,
+    "labelled": 50,
+    "request_id": "e8fd0890",
+    "server_ms": 44114.2,
+    "round_trip_ms": 44379.5,
+    "all_truncated": true,
+    "request_record": {
+      "ts": "2026-11-16T04:37:54.072+00:00",
+      "run_id": "e8fd0890",
+      "event": "request",
+      "path": "/classify",
+      "status_code": 200,
+      "latency_ms": 44114.2,
+      "n_posts": 50,
+      "error": null,
+      "rss_mib": 379.7,
+      "peak_rss_mib": 440.6
+    },
+    "met": false
+  },
+  "c5": {
+    "startup_peak_mib": 437.7,
+    "after_batch_peak_mib": 440.6,
+    "startup_record": {
+      "ts": "2026-11-16T04:31:44.321+00:00",
+      "run_id": null,
+      "event": "startup",
+      "model": "takemeter_onnx",
+      "backend": "onnx",
+      "runtime": "onnxruntime 1.32.0",
+      "labels": [
+        "analysis",
+        "hot_take",
+        "reaction"
+      ],
+      "model_load_ms": 7791.7,
+      "rss_mib": 363.4,
+      "peak_rss_mib": 437.7,
+      "python": "3.13.1"
+    },
+    "met": true
+  },
+  "verdicts": {
+    "c1": true,
+    "c2": false,
+    "c3": true,
+    "c4": false,
+    "c5": true
+  }
+}

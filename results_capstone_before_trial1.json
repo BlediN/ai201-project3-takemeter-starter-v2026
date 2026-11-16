@@ -1,0 +1,841 @@
+{
+  "label": "before",
+  "trial": 1,
+  "url": "https://takemeter.onrender.com",
+  "started_utc": "2026-11-16T04:27:18+00:00",
+  "health_at_start": {
+    "status": "ok",
+    "uptime_s": 301.7,
+    "backend": "onnx",
+    "rss_mib": 470.2,
+    "peak_rss_mib": 469.5
+  },
+  "targets": {
+    "c1_cases": 15,
+    "c2_posts": 229,
+    "c3_median_server_ms": 250.0,
+    "c3_max_round_trip_ms": 1000.0,
+    "c4_server_ms": 30000.0,
+    "c5_peak_mib": 480.0
+  },
+  "outages": [
+    {
+      "before": "C3",
+      "waited_s": 0.2,
+      "uptime_s_after": 396.8,
+      "new_startup_records": []
+    },
+    {
+      "before": "C4",
+      "waited_s": 0.2,
+      "uptime_s_after": 401.8,
+      "new_startup_records": []
+    },
+    {
+      "before": "end",
+      "waited_s": 0.1,
+      "uptime_s_after": 446.2,
+      "new_startup_records": []
+    }
+  ],
+  "restarts_during_trial": 0,
+  "harness": "v2 (log snapshots + recovery waits)",
+  "c1": {
+    "handled": 15,
+    "logged": 15,
+    "n": 15,
+    "met": true,
+    "cases": [
+      {
+        "id": "1",
+        "case": "body not JSON",
+        "level": "request",
+        "http_status": 400,
+        "request_id": "cb8506a5",
+        "round_trip_ms": 152.5,
+        "response": {
+          "error": "body is not JSON. Send {\"text\": \"...\"} or {\"posts\": [...]}",
+          "request_id": "cb8506a5"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:27:18.692+00:00",
+            "run_id": "cb8506a5",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 400,
+            "latency_ms": 0.2,
+            "n_posts": 0,
+            "error": "body is not JSON. Send {\"text\": \"...\"} or {\"posts\": [...]}",
+            "rss_mib": 470.2,
+            "peak_rss_mib": 469.5
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "case": "JSON with neither text nor posts",
+        "level": "request",
+        "http_status": 400,
+        "request_id": "d4493034",
+        "round_trip_ms": 142.0,
+        "response": {
+          "error": "expected {\"text\": \"...\"} or {\"posts\": [\"...\", ...]}",
+          "request_id": "d4493034"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:27:18.841+00:00",
+            "run_id": "d4493034",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 400,
+            "latency_ms": 0.2,
+            "n_posts": 0,
+            "error": "expected {\"text\": \"...\"} or {\"posts\": [\"...\", ...]}",
+            "rss_mib": 470.2,
+            "peak_rss_mib": 469.5
+          }
+        ]
+      },
+      {
+        "id": "3",
+        "case": "posts not a list",
+        "level": "request",
+        "http_status": 400,
+        "request_id": "1bda5d95",
+        "round_trip_ms": 153.4,
+        "response": {
+          "error": "\"posts\" must be a list",
+          "request_id": "1bda5d95"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:27:18.994+00:00",
+            "run_id": "1bda5d95",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 400,
+            "latency_ms": 0.2,
+            "n_posts": 0,
+            "error": "\"posts\" must be a list",
+            "rss_mib": 470.2,
+            "peak_rss_mib": 469.5
+          }
+        ]
+      },
+      {
+        "id": "4",
+        "case": "posts an empty list",
+        "level": "request",
+        "http_status": 400,
+        "request_id": "d2f1038d",
+        "round_trip_ms": 156.2,
+        "response": {
+          "error": "\"posts\" is empty",
+          "request_id": "d2f1038d"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:27:19.148+00:00",
+            "run_id": "d2f1038d",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 400,
+            "latency_ms": 0.2,
+            "n_posts": 0,
+            "error": "\"posts\" is empty",
+            "rss_mib": 470.2,
+            "peak_rss_mib": 469.5
+          }
+        ]
+      },
+      {
+        "id": "5",
+        "case": "51 posts",
+        "level": "request",
+        "http_status": 413,
+        "request_id": "874f0aec",
+        "round_trip_ms": 356.3,
+        "response": {
+          "error": "51 posts; the limit is 50 per request",
+          "request_id": "874f0aec"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:27:19.486+00:00",
+            "run_id": "874f0aec",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 413,
+            "latency_ms": 0.2,
+            "n_posts": 0,
+            "error": "51 posts; the limit is 50 per request",
+            "rss_mib": 470.2,
+            "peak_rss_mib": 469.5
+          }
+        ]
+      },
+      {
+        "id": "6",
+        "case": "body over 1 MB",
+        "level": "request",
+        "http_status": 413,
+        "request_id": "9927daee",
+        "round_trip_ms": 652.8,
+        "response": {
+          "error": "request body over 1000000 bytes",
+          "request_id": "9927daee"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:27:20.161+00:00",
+            "run_id": "9927daee",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 413,
+            "latency_ms": 247.2,
+            "n_posts": 0,
+            "error": "request body over 1000000 bytes",
+            "rss_mib": 470.2,
+            "peak_rss_mib": 469.5
+          }
+        ]
+      },
+      {
+        "id": "7",
+        "case": "empty string",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "35f0bd8e",
+        "round_trip_ms": 138.4,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "empty",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "35f0bd8e"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:27:20.297+00:00",
+            "run_id": "35f0bd8e",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "empty",
+            "input_chars": 0
+          },
+          {
+            "ts": "2026-11-16T04:27:20.297+00:00",
+            "run_id": "35f0bd8e",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.4,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 470.2,
+            "peak_rss_mib": 469.5
+          }
+        ]
+      },
+      {
+        "id": "8",
+        "case": "whitespace only",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "4c2b0c01",
+        "round_trip_ms": 137.1,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "empty",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "4c2b0c01"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:27:20.432+00:00",
+            "run_id": "4c2b0c01",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "   \n\t",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "empty",
+            "input_chars": 5
+          },
+          {
+            "ts": "2026-11-16T04:27:20.433+00:00",
+            "run_id": "4c2b0c01",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.3,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 470.2,
+            "peak_rss_mib": 469.5
+          }
+        ]
+      },
+      {
+        "id": "9",
+        "case": "emoji only",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "c9463ac9",
+        "round_trip_ms": 323.8,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "no_words",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "c9463ac9"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:27:20.747+00:00",
+            "run_id": "c9463ac9",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "🔥🔥🔥",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "no_words",
+            "input_chars": 3
+          },
+          {
+            "ts": "2026-11-16T04:27:20.747+00:00",
+            "run_id": "c9463ac9",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.4,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 470.3,
+            "peak_rss_mib": 469.5
+          }
+        ]
+      },
+      {
+        "id": "10",
+        "case": "link only",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "a2963d5e",
+        "round_trip_ms": 141.2,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "link_only",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "a2963d5e"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:27:20.895+00:00",
+            "run_id": "a2963d5e",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "https://streamable.com/abc123",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "link_only",
+            "input_chars": 29
+          },
+          {
+            "ts": "2026-11-16T04:27:20.896+00:00",
+            "run_id": "a2963d5e",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.3,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 470.3,
+            "peak_rss_mib": 469.5
+          }
+        ]
+      },
+      {
+        "id": "11",
+        "case": "bare score",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "dfc71b45",
+        "round_trip_ms": 168.1,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "no_words",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "dfc71b45"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:27:21.068+00:00",
+            "run_id": "dfc71b45",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "23-9",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "no_words",
+            "input_chars": 4
+          },
+          {
+            "ts": "2026-11-16T04:27:21.068+00:00",
+            "run_id": "dfc71b45",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.4,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 470.3,
+            "peak_rss_mib": 469.5
+          }
+        ]
+      },
+      {
+        "id": "12",
+        "case": "10,001 chars of words",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "921f2a61",
+        "round_trip_ms": 160.1,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "too_long (10001 chars > 10000)",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "921f2a61"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:27:21.222+00:00",
+            "run_id": "921f2a61",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists analysis hot take reaction box score rebounds assists an",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "too_long (10001 chars > 10000)",
+            "input_chars": 10001
+          },
+          {
+            "ts": "2026-11-16T04:27:21.222+00:00",
+            "run_id": "921f2a61",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 1.8,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 470.3,
+            "peak_rss_mib": 469.5
+          }
+        ]
+      },
+      {
+        "id": "13",
+        "case": "a number",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "4a327c58",
+        "round_trip_ms": 145.8,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "not_text (int)",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "4a327c58"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:27:21.373+00:00",
+            "run_id": "4a327c58",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "42",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "not_text (int)",
+            "input_chars": 2
+          },
+          {
+            "ts": "2026-11-16T04:27:21.373+00:00",
+            "run_id": "4a327c58",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.3,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 470.3,
+            "peak_rss_mib": 469.5
+          }
+        ]
+      },
+      {
+        "id": "14",
+        "case": "null",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "c1e77d00",
+        "round_trip_ms": 135.0,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "missing",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "c1e77d00"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:27:21.508+00:00",
+            "run_id": "c1e77d00",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "missing",
+            "input_chars": 0
+          },
+          {
+            "ts": "2026-11-16T04:27:21.508+00:00",
+            "run_id": "c1e77d00",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.3,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 470.3,
+            "peak_rss_mib": 469.5
+          }
+        ]
+      },
+      {
+        "id": "15",
+        "case": "zero-width spaces only",
+        "level": "post",
+        "http_status": 200,
+        "request_id": "92f29fa2",
+        "round_trip_ms": 214.7,
+        "response": {
+          "results": [
+            {
+              "status": "rejected",
+              "label": null,
+              "confidence": null,
+              "tokens": null,
+              "truncated": null,
+              "reason": "no_words",
+              "latency_ms": 0.0
+            }
+          ],
+          "backend": "onnx",
+          "request_id": "92f29fa2"
+        },
+        "handled": true,
+        "logged": true,
+        "log_records": [
+          {
+            "ts": "2026-11-16T04:27:21.724+00:00",
+            "run_id": "92f29fa2",
+            "event": "post",
+            "source": "http",
+            "row": 1,
+            "latency_ms": 0.0,
+            "input": "​​",
+            "status": "rejected",
+            "label": null,
+            "confidence": null,
+            "tokens": null,
+            "truncated": null,
+            "reason": "no_words",
+            "input_chars": 2
+          },
+          {
+            "ts": "2026-11-16T04:27:21.724+00:00",
+            "run_id": "92f29fa2",
+            "event": "request",
+            "path": "/classify",
+            "status_code": 200,
+            "latency_ms": 0.3,
+            "n_posts": 1,
+            "error": null,
+            "rss_mib": 470.3,
+            "peak_rss_mib": 469.5
+          }
+        ]
+      }
+    ]
+  },
+  "c2": {
+    "same_label": 229,
+    "truncated_correct": 229,
+    "n": 229,
+    "n_over_128": 8,
+    "met": true,
+    "batch_failures": [],
+    "mismatches": []
+  },
+  "c3": {
+    "median_server_ms": 162.2,
+    "max_round_trip_ms": 605.5,
+    "mean_server_ms": 186.3,
+    "met": true,
+    "runs": [
+      {
+        "http_status": 200,
+        "request_id": "3f3d389a",
+        "server_ms": 292.7,
+        "round_trip_ms": 605.5
+      },
+      {
+        "http_status": 200,
+        "request_id": "44ccee22",
+        "server_ms": 161.4,
+        "round_trip_ms": 304.1
+      },
+      {
+        "http_status": 200,
+        "request_id": "b177b169",
+        "server_ms": 252.7,
+        "round_trip_ms": 389.1
+      },
+      {
+        "http_status": 200,
+        "request_id": "39f65c92",
+        "server_ms": 145.7,
+        "round_trip_ms": 324.5
+      },
+      {
+        "http_status": 200,
+        "request_id": "2d84332b",
+        "server_ms": 213.5,
+        "round_trip_ms": 379.1
+      },
+      {
+        "http_status": 200,
+        "request_id": "4c60437c",
+        "server_ms": 162.2,
+        "round_trip_ms": 315.8
+      },
+      {
+        "http_status": 200,
+        "request_id": "5bfef91f",
+        "server_ms": 143.9,
+        "round_trip_ms": 378.4
+      },
+      {
+        "http_status": 200,
+        "request_id": "777de19a",
+        "server_ms": 155.8,
+        "round_trip_ms": 401.0
+      },
+      {
+        "http_status": 200,
+        "request_id": "80c5d942",
+        "server_ms": 172.7,
+        "round_trip_ms": 315.0
+      },
+      {
+        "http_status": 200,
+        "request_id": "8293ee0b",
+        "server_ms": 162.2,
+        "round_trip_ms": 295.2
+      }
+    ]
+  },
+  "c4": {
+    "http_status": 200,
+    "labelled": 50,
+    "request_id": "86537d80",
+    "server_ms": 43651.5,
+    "round_trip_ms": 43839.4,
+    "all_truncated": true,
+    "request_record": {
+      "ts": "2026-11-16T04:29:42.499+00:00",
+      "run_id": "86537d80",
+      "event": "request",
+      "path": "/classify",
+      "status_code": 200,
+      "latency_ms": 43651.5,
+      "n_posts": 50,
+      "error": null,
+      "rss_mib": 473.9,
+      "peak_rss_mib": 473.2
+    },
+    "met": false
+  },
+  "c5": {
+    "startup_peak_mib": 466.2,
+    "after_batch_peak_mib": 473.2,
+    "startup_record": {
+      "ts": "2026-11-16T04:22:21.904+00:00",
+      "run_id": null,
+      "event": "startup",
+      "model": "takemeter_onnx",
+      "backend": "onnx",
+      "runtime": "onnxruntime 1.32.0",
+      "labels": [
+        "analysis",
+        "hot_take",
+        "reaction"
+      ],
+      "model_load_ms": 5200.3,
+      "rss_mib": 466.6,
+      "peak_rss_mib": 466.2,
+      "python": "3.13.1"
+    },
+    "met": true
+  },
+  "verdicts": {
+    "c1": true,
+    "c2": true,
+    "c3": true,
+    "c4": false,
+    "c5": true
+  }
+}
