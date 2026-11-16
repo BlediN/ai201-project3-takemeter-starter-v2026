@@ -148,3 +148,157 @@ is checkable.
      A number you missed stays where it is, gets diagnosed, and gets a fix
      attempted. That's where the points are.
      ───────────────────────────────────────────────────────────────────────── -->
+
+---
+---
+
+# Capstone criteria: hardened, hosted TakeMeter
+
+Written on 2026-11-16, before any capstone test run. The five criteria above
+are project 3's and are unchanged. These five are about the extension:
+`classify.py`'s failure handling, the logging, and the hosted service at
+https://takemeter.onrender.com (`server.py`, ONNX backend).
+
+**What I already knew when I wrote these.** Milestone 3 measured a few
+things while getting the service running: warm latency (means 161 and
+172 ms over two sets of 10), one 50-post batch of long posts (42.9 s), peak
+memory on two boots (471 and 439 MiB), and one cold start (32.6 s). Those
+numbers set where the targets sit. None of the five tests below has been run
+yet.
+
+**What counts as a trial.** Each criterion runs 3 times. For 1–4 a trial is a
+separate run of the whole test against the hosted URL, with the instance
+already awake (a warm-up request first), and at least 5 minutes between
+trials. For 5, each trial is a **separate boot** of the instance, because
+memory changed between boots in Milestone 3. A criterion is **met** only if
+it holds on all 3 trials.
+
+---
+
+## 1. Bad input never gets a label, and always leaves a record
+
+Send this fixed set of 15 bad inputs to the hosted `/classify`. In every
+trial, all 15 must:
+- come back without a label,
+- produce no `5xx` and no timeout, and
+- leave a log record in `/logs` (a `request` record with the same
+  `request_id`, plus a `post` record for each post-level case).
+
+Request-level cases (expect `400` or `413`):
+1. body not JSON
+2. JSON with neither `text` nor `posts`
+3. `posts` not a list
+4. `posts` an empty list
+5. 51 posts
+6. a body over 1 MB
+
+Post-level cases (expect `200` with `status: "rejected"` and `label: null`):
+
+7. `""`
+8. whitespace only (`"   \n\t"`)
+9. emoji only (`"🔥🔥🔥"`, sent as UTF-8 from a file, not typed into the
+   Windows shell, which mangled it in Milestone 3)
+10. a link only
+11. a bare score (`"23-9"`)
+12. 10,001 characters of real words
+13. a number (`42`)
+14. `null`
+15. zero-width spaces only (`"\u200b\u200b"`)
+
+**Target: 15/15 handled correctly, and 15/15 logged, on every trial.**
+
+**Why this target:** This is the bad path, and it's ordinary code, not the
+model, so it should be all-or-nothing. A garbage post that comes back as
+`hot_take` at 0.40 confidence looks the same as a real prediction to whoever
+reads it. Given the model's 0.60 accuracy, that's one more silent wrong
+label on top of the ones I can't avoid. One forced label, one `500`, or one
+failure that leaves no record is a bug I can name, so the target is 100%.
+Anything looser would excuse exactly the failures shape B is meant to remove.
+Case 15 is in because Python's `strip()` doesn't treat a zero-width space as
+whitespace, so I don't know which check catches it. Case 6 is in because
+Render's proxy sits in front of my 1 MB limit, and I haven't seen what it does
+with a large body.
+
+---
+
+## 2. The hosted model gives the same answers as the trained model
+
+Send all 229 posts in `labels.csv` to the hosted `/classify` in 5 batches (at
+most 50 each). Compare each result with the local PyTorch model in
+`takemeter_model/` (the notebook's model) and with an independent token count
+from the `transformers` tokenizer.
+
+**Target, every trial: the same label on 229/229 posts, and the `truncated`
+flag correct on 229/229.** "Correct" means `true` exactly when the
+independent count is over 128. 8 of the 229 posts are over 128 tokens.
+
+**Why this target:** The hosted service runs a different runtime (ONNX, not
+PyTorch), a different tokenizer library (`tokenizers`, not `transformers`)
+and my own hand-written truncation step. Each of those could change an answer
+without any error. Locally the two agreed on 37/37 posts, but that's 37 posts,
+on Windows. If even one label differs, the 0.600 accuracy in my project 3
+README isn't the accuracy of the thing at the URL. So the target is exact,
+not "close". The `truncated` flag is the reason long posts are no longer
+silently cut, and a flag that's wrong some of the time is worse than none. 229
+posts cover all 8 of my over-limit posts. A test-split-only check would cover
+just 1–2 of them.
+
+---
+
+## 3. A warm single post comes back in under a second
+
+Send the same single post (the 39-token Jokic post from `measure_cost.py`) 10
+times to the awake instance.
+
+**Target, every trial: median server `latency_ms` ≤ 250 ms, and every one of
+the 10 round trips ≤ 1,000 ms.**
+
+**Why this target:** The page at `/` is someone pasting one comment and
+waiting. Under about a second it feels instant, and past that people click
+again, which doubles the load on a fraction of one CPU. 250 ms on the server
+leaves room for what I saw in Milestone 3 (medians of 153 and 164 ms, single
+requests up to 245 ms) without accepting a real slowdown. A median of 200 ms
+would make me fail on noise from Render's shared CPU, and 500 ms would hide a
+real regression. I check every round trip against 1,000 ms, not the mean,
+because the slowest request is what a person notices. Cold starts are left out
+on purpose (~30 s, already known). This is about warm requests only.
+
+---
+
+## 4. The largest batch the API allows finishes in 30 seconds
+
+Send one request with 50 posts (the API's limit), each one over 128 tokens
+(the same 222-token post, so every one fills the model's full input).
+
+**Target, every trial: status `200`, all 50 labelled, and the server's
+`latency_ms` for the request ≤ 30,000 ms.**
+
+**Why this target:** The API says 50 posts per request, so a 50-post batch of
+long posts is a request I've promised to handle. In Milestone 3 one took
+**42.9 s**, about 860 ms per post. 30 s is the default timeout in a lot of
+HTTP clients and scripts, so a request slower than that gets abandoned
+partway, and whoever sent it has no labels and doesn't know why. A looser
+target would describe what the system already does, not what a caller needs.
+A stricter one (10 s, say) would mean rethinking the free tier, not fixing
+`server.py`. I expect this one to miss before the fix.
+
+---
+
+## 5. Memory stays at least 32 MiB under Render's 512 MiB limit
+
+On each of 3 separate boots, read `peak_rss_mib` from the `startup` record,
+then send the 50-long-post batch from criterion 4 and read `peak_rss_mib`
+from its `request` record.
+
+**Target, every boot: `peak_rss_mib` ≤ 480 MiB, both at startup and after the
+batch.**
+
+**Why this target:** Render kills the service if it goes over 512 MiB, and on
+the free tier that means the URL is down until the next deploy or wake-up. I
+measured 471 MiB on one boot and 439 MiB on another. The 32 MiB swing between
+boots is about the same size as the headroom. 480 MiB keeps one boot's swing
+(32 MiB) between me and the limit. A boot 32 MiB worse than my 471 MiB one
+would sit at 503 MiB, 9 MiB from being killed. 500 MiB would leave 12 MiB, less than the swing I've already
+seen, so it would pass right up to the boot that crashes. 450 would only
+test whether the first boot was a fluke. I expect this one to miss on some
+boots.
