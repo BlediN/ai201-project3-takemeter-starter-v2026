@@ -21,16 +21,36 @@ few lines; most of this file is what happens when something goes wrong:
 
 Exit codes: 0 the run finished (rejected posts are normal output, not a
 failure), 2 the run could not start.
+
+Every run appends to a structured log (default logs/classify_log.jsonl), one
+JSON object per line:
+
+  event "post"      one per post: ts, input, status, label, confidence,
+                    tokens, truncated, reason, latency_ms
+  event "run_end"   one per run: counts, model_load_ms, total_ms
+  event "fatal"     a run that could not start, and why
+
+If the log can't be written, the run still classifies and says so on stderr.
 """
 
 import argparse
 import csv
 import json
+import os
+import platform
 import re
 import sys
+import time
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 DEFAULT_MODEL_DIR = "takemeter_model"
+DEFAULT_LOG = os.path.join("logs", "classify_log.jsonl")
+
+# The log keeps what came in, but not unboundedly: a 10,000-character post is
+# cut to this many characters in the log (input_chars still says how long it was).
+LOG_INPUT_CHARS = 2000
 
 # Reddit caps a comment at 10,000 characters. Anything longer didn't come from
 # r/nba, and tokenizing it is wasted work, so it is rejected rather than cut.
@@ -227,6 +247,58 @@ def read_csv_posts(csv_path):
     return df["text"].tolist() + bad_rows
 
 
+# ── Structured log ───────────────────────────────────────────────────────────
+
+class RunLog:
+    """
+    Appends one JSON object per line to a .jsonl file.
+
+    Each record is written and flushed as it happens, so a run that crashes
+    halfway still leaves everything up to the crash on disk. A log that can't
+    be written (read-only folder, path is a directory, disk full) is reported
+    once on stderr and then ignored: losing the log must not lose the labels.
+    """
+
+    def __init__(self, path, run_id):
+        self.path, self.run_id = path, run_id
+        self.file, self.broken = None, False
+        if path is None:
+            return
+        try:
+            folder = os.path.dirname(path)
+            if folder:
+                os.makedirs(folder, exist_ok=True)
+            self.file = open(path, "a", encoding="utf-8")
+        except OSError as e:
+            self._fail(e)
+
+    def _fail(self, e):
+        if not self.broken:
+            print(f"warning: can't write log {self.path} ({e}). "
+                  "Classifying anyway, without a log.", file=sys.stderr)
+        self.broken, self.file = True, None
+
+    @property
+    def active(self):
+        return self.file is not None
+
+    def write(self, event, **fields):
+        if self.file is None:
+            return
+        record = {"ts": datetime.now(timezone.utc).isoformat(timespec="milliseconds"),
+                  "run_id": self.run_id, "event": event, **fields}
+        try:
+            self.file.write(json.dumps(record, ensure_ascii=False) + "\n")
+            self.file.flush()
+        except OSError as e:
+            self._fail(e)
+
+    def close(self):
+        if self.file is not None:
+            self.file.close()
+            self.file = None
+
+
 # ── Output ───────────────────────────────────────────────────────────────────
 
 def show(record, i, n):
@@ -246,6 +318,9 @@ def parse_args(argv):
     p.add_argument("--csv", help="a CSV file with a `text` column")
     p.add_argument("--model", default=DEFAULT_MODEL_DIR,
                    help=f"model folder (default: {DEFAULT_MODEL_DIR})")
+    p.add_argument("--log", default=DEFAULT_LOG,
+                   help=f"structured log, appended to (default: {DEFAULT_LOG})")
+    p.add_argument("--no-log", action="store_true", help="don't write a log")
     return p.parse_args(argv)
 
 
@@ -259,6 +334,9 @@ def main(argv=None):
             pass
 
     args = parse_args(argv)
+    t_start = time.perf_counter()
+    log = RunLog(None if args.no_log else args.log, uuid.uuid4().hex[:8])
+    source = f"csv:{args.csv}" if args.csv else "cli"
 
     try:
         if args.csv and args.posts:
@@ -270,19 +348,50 @@ def main(argv=None):
         else:
             raise FatalError('nothing to classify. Try: python classify.py "your post"')
 
+        t_load = time.perf_counter()
         m = load_model(args.model)
+        model_load_ms = round((time.perf_counter() - t_load) * 1000, 1)
     except FatalError as e:
         print(f"error: {e}", file=sys.stderr)
+        log.write("fatal", source=source, model=args.model, error=str(e),
+                  total_ms=round((time.perf_counter() - t_start) * 1000, 1))
+        log.close()
         return EXIT_FATAL
 
     counts = {"ok": 0, "rejected": 0, "error": 0}
+    ok_latencies = []
     for i, text in enumerate(posts, 1):
+        t0 = time.perf_counter()
         record = run_post(m, text)
+        latency_ms = round((time.perf_counter() - t0) * 1000, 1)
+
         counts[record["status"]] += 1
+        if record["status"] == "ok":
+            ok_latencies.append(latency_ms)
         show(record, i, len(posts))
+
+        logged = dict(record)
+        logged["input_chars"] = len(logged["input"])
+        logged["input"] = logged["input"][:LOG_INPUT_CHARS]
+        log.write("post", source=source, row=i, latency_ms=latency_ms, **logged)
+
+    total_ms = round((time.perf_counter() - t_start) * 1000, 1)
+    mean_ms = (round(sum(ok_latencies) / len(ok_latencies), 1)
+               if ok_latencies else None)
+    log.write("run_end", source=source, model=args.model, n_posts=len(posts),
+              **counts, model_load_ms=model_load_ms, total_ms=total_ms,
+              mean_latency_ms_ok=mean_ms, python=platform.python_version(),
+              torch=m["torch"].__version__)
+    logged_to = args.log if log.active else None
+    log.close()
 
     print(f"\n{len(posts)} posts: {counts['ok']} labelled, "
           f"{counts['rejected']} rejected, {counts['error']} errors")
+    print(f"model load {model_load_ms / 1000:.1f}s · "
+          f"mean {mean_ms if mean_ms is not None else '-'} ms per labelled post · "
+          f"total {total_ms / 1000:.1f}s")
+    if logged_to:
+        print(f"log: {logged_to}")
     return EXIT_OK
 
 

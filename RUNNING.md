@@ -8,6 +8,116 @@ nothing hosted.
 
 ---
 
+## Capstone: running `classify.py` (Path B, local with logs)
+
+`classify.py` is the run path for the capstone. It labels r/nba posts with the
+trained model, outside the notebook, and writes a structured log of every run.
+
+### The command
+
+From the repo folder, with the `.venv` active:
+
+```bash
+python classify.py --csv test_split.csv
+```
+
+Or with posts typed directly:
+
+```bash
+python classify.py "Jokic is the best player alive and it's not close" "WHAT A BLOCK"
+```
+
+Each post prints one line: its label and confidence, `REJECTED` with a reason,
+or `ERROR`. The run ends with a summary and the timing. Every post is also
+appended to `logs/classify_log.jsonl` (see **The log** below).
+
+| Option | What it does |
+|---|---|
+| `--csv FILE` | Classify the `text` column of a CSV, instead of posts on the command line |
+| `--model DIR` | Model folder (default `takemeter_model`) |
+| `--log FILE` | Where the log goes (default `logs/classify_log.jsonl`, appended to) |
+| `--no-log` | Don't write a log |
+
+**Exit codes:** `0` means the run finished, even if some posts were rejected.
+Rejecting bad posts is normal output. `2` means the run couldn't start: no
+model, an unreadable CSV, a missing `text` column or no input. The message
+says which.
+
+### From a clean checkout
+
+The model isn't in git (it's 269 MB, see `.gitignore`), so a fresh clone
+builds it once:
+
+```bash
+git clone <this repo> && cd <repo folder>
+python -m venv .venv
+source .venv/bin/activate              # Windows: .venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python test.py                         # must say 0 failed
+```
+
+Then open `takemeter.ipynb` with the `.venv` kernel and run **sections 1–5
+and the "Save the model for `classify.py`" cell** right after section 5.
+That's about 10 minutes on a CPU. It writes `takemeter_model/`. With
+`SEED = 42` and `EPOCHS = 10` it rebuilds the same model: a headless re-run
+on 2026-11-15 reproduced the committed `results.json` and `test_split.csv`
+exactly. After that, `python classify.py ...` is the only command you need.
+
+### What the environment needs
+
+| | |
+|---|---|
+| Python | 3.13.16 (`requirements.txt` allows 3.11–3.13, not 3.14) |
+| Device | CPU only. No GPU, no API key, no network after setup |
+| Model files | `takemeter_model/`, 269 MB in total (`model.safetensors` 268 MB, plus tokenizer and config) |
+| Base model download | `distilbert-base-uncased`, about 270 MB, fetched once by the notebook |
+| Memory | Peak 623 MB while classifying the 35-post `test_split.csv` (Windows peak working set, measured 2026-11-15). Training peaks around 2.1 GB |
+
+The exact versions this was run and logged with (`pip freeze`), all inside the
+ranges in `requirements.txt`:
+
+```
+torch==2.14.1          transformers==4.57.6    tokenizers==0.22.2
+safetensors==0.8.0     pandas==2.3.3           numpy==2.5.4
+scikit-learn==1.9.1    datasets==3.6.0         accelerate==1.15.0
+```
+
+To install exactly these versions instead of the ranges:
+`pip install torch==2.14.1 transformers==4.57.6 tokenizers==0.22.2 safetensors==0.8.0 pandas==2.3.3 numpy==2.5.4 scikit-learn==1.9.1 datasets==3.6.0 accelerate==1.15.0`
+
+### The log
+
+`logs/classify_log.jsonl` has one JSON object per line. Records are flushed as
+they're written, so a run that dies halfway still leaves its earlier records.
+
+| `event` | Written | Fields |
+|---|---|---|
+| `post` | Once per post | `ts`, `run_id`, `source`, `row`, `input` (first 2,000 chars), `input_chars`, `status` (`ok` / `rejected` / `error`), `label`, `confidence`, `tokens`, `truncated`, `reason`, `latency_ms` |
+| `run_end` | Once per finished run | `n_posts`, `ok`, `rejected`, `error`, `model_load_ms`, `total_ms`, `mean_latency_ms_ok`, `python`, `torch` |
+| `fatal` | A run that couldn't start | `error`, `total_ms` |
+
+`run_id` ties a run's records together. `latency_ms` covers one post end to
+end (input checks, tokenizing and the forward pass). `model_load_ms` is the
+one-time startup cost, and it's paid on every run.
+
+If the log file can't be written, `classify.py` prints one warning and
+classifies anyway. Losing the log doesn't lose the labels.
+
+### When `classify.py` goes wrong
+
+| What you see | What it means |
+|---|---|
+| `error: model folder not found: takemeter_model` | You haven't built the model yet. See **From a clean checkout** |
+| `error: model folder ... is incomplete` / `could not be loaded` | The folder is half-copied or corrupt. Delete it and re-run the save cell |
+| `error: CSV has no \`text\` column` | The message lists the columns it did find. Rename yours to `text` |
+| `error: CSV is not UTF-8 text` | Re-save the file as UTF-8 |
+| `REJECTED empty` / `no_words` / `link_only` / `too_long` | That post can't be classified. The rest of the run carries on |
+| `REJECTED malformed_row` | That CSV line had the wrong number of fields (often an unquoted comma). It's listed at the end of the run |
+| `[truncated: N tokens]` | The post was labelled, but the model only read the first 128 tokens |
+| `warning: can't write log` | The log path is read-only or is a folder. The labels still print |
+
+---
+
 ## Before your first class
 
 One setup, one virtual environment, everything in this repo. The
@@ -233,6 +343,7 @@ README has a block to fill in for each one.
 | `python baseline.py --help` | All the options |
 | Notebook: sections 1–5 | Train once, write `results.json` — **unit 5** |
 | Notebook: sections 6–7 | Three seeds and the matrix — **unit 6** |
+| `python classify.py --csv FILE` / `"post"` | Label posts with the saved model, and log the run. **Capstone** |
 
 ---
 
@@ -285,6 +396,9 @@ README has a block to fill in for each one.
 | `baseline_results.json` | Written by `baseline.py`. **Commit it** |
 | `agreement_results.json` | Written by `agreement.py`. **Commit it** |
 | `my_staff_labels.csv` | Your labels on the staff set. **You create this** |
+| `classify.py` | Labels posts with the saved model, outside the notebook. **Capstone** |
+| `takemeter_model/` | The saved model. Built by the notebook's save cell, **not committed** |
+| `logs/classify_log.jsonl` | Structured log of every `classify.py` run. **Commit it**, it's the run record |
 
 ---
 
