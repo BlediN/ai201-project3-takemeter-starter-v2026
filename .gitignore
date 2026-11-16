@@ -29,6 +29,6 @@ Thumbs.db
 # deliberately NOT ignored. They're evidence the run actually happened, and
 # they're part of what gets graded. Commit them.
 
-# The saved TakeMeter model (capstone). ~255 MB and rebuildable from the
+# The saved TakeMeter model (capstone). ~270 MB and rebuildable from the
 # notebook: sections 1-5 plus the save cell.
 takemeter_model/
