@@ -762,3 +762,53 @@ my reading of the matrix, not a confirmed cause.
 ---
 
 📖 **How to run this project: [RUNNING.md](RUNNING.md)**
+
+---
+
+## Capstone
+
+**The System**
+
+TakeMeter, the r/nba comment classifier from project 3 (a fine-tuned
+DistilBERT that labels each comment `analysis`, `hot_take` or `reaction`).
+Until now it has only ever run inside `takemeter.ipynb`. The notebook trains
+a model, scores it, and throws it away (`save_strategy="no"`), so nothing
+outside the notebook can classify a post.
+
+**The Shape**
+
+Shape B, harden against failure. I'm adding `classify.py`, a single command
+that loads a saved TakeMeter model and labels posts from the command line or
+from a CSV. Most of the work is in what it does when things go wrong, not in
+the happy path. An empty or whitespace-only post, or one with no words (just
+emojis or a link), gets rejected with a reason instead of a forced label. A
+post longer than the 128-token limit still gets classified, but it's marked
+`truncated` so the silent cut-off I flagged in The Training Run shows up in
+the output. A missing or broken model folder ends with a one-line error and a
+non-zero exit code instead of a stack trace. A CSV with a missing `text`
+column stops with a clear message, and a bad row is skipped and logged while
+the rest of the batch keeps going. Every post, good or bad, writes one
+structured log record (timestamp, input, label or error, confidence,
+truncated flag, status, milliseconds). The only change to the notebook is a
+`save_pretrained` call so a trained model exists for `classify.py` to load.
+
+**Out of Scope**
+
+- **Making the model more accurate.** No relabelling, no new data, no more
+  epochs. Criteria 1, 2 and 5 from project 3 stay missed, and that's still
+  the model's problem, not this unit's. The failure handling has to work
+  around a model that is often wrong.
+- **Actually reading long posts in full** (splitting them into chunks and
+  combining the predictions). That's a new capability (shape C), not failure
+  handling. This unit only makes the truncation visible.
+- **Hosting it or putting a web API or UI around it.** The model loads
+  locally and is over the 512 MB free tier once PyTorch is counted, so this
+  is Path B: one documented local command plus a committed run log.
+
+**Size Check**
+
+About 75–90 minutes of building: roughly 15 for saving the model and
+writing the loading code, 45 for the input checks, CSV handling and error
+exits, and 20 for the logger. Anything beyond those failure paths (an
+"uncertain" label for low-confidence posts, retries, a config file) waits
+until the criteria and tests are done.
